@@ -1119,3 +1119,22 @@ body {
   padding: 20px;
   color: #666;
 }
+.post-card-header.parented {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.post-type {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  margin-left: 8px;
+  border-radius: 4px;
+  background-color: #e2e3e5; /* cinza claro */
+  color: #495057;
+}
+
+.post-card-header.parented .post-type {
+  background-color: #d4edda; /* verde claro */
+  color: #155724;
+}

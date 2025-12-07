@@ -15,9 +15,30 @@ let moderationSettings = {
   payoutAlertThreshold: 100,
   theme: "light",
   postsPerPage: 25,
-  mutedUsers: JSON.parse(localStorage.getItem("mutedUsers") || "[]"), // ADICIONADO
+  mutedUsers: [], // será carregado do localStorage
 };
 
+function loadSettings() {
+  const savedSettings = JSON.parse(localStorage.getItem("moderationSettings") || "{}");
+
+  moderationSettings = {
+    autoFlagSpam: true,
+    autoFlagPlagiarism: true,
+    notifyHighPayout: true,
+    payoutAlertThreshold: 100,
+    theme: "light",
+    postsPerPage: 25,
+    mutedUsers: JSON.parse(localStorage.getItem("mutedUsers") || "[]"),
+    ...savedSettings, // merge com settings salvos
+  };
+
+  // Garante que mutedUsers seja sempre um array
+  if (!Array.isArray(moderationSettings.mutedUsers)) {
+    moderationSettings.mutedUsers = [];
+  }
+
+  return moderationSettings;
+}
 // Função para salvar usuários mutados
 function saveMutedUsers() {
   localStorage.setItem("mutedUsers", JSON.stringify(moderationSettings.mutedUsers));
@@ -27,9 +48,8 @@ function saveMutedUsers() {
 function muteUser(username) {
   if (!moderationSettings.mutedUsers.includes(username)) {
     moderationSettings.mutedUsers.push(username);
-    saveMutedUsers();
+    saveSettings();
     showNotification(`Usuário ${username} mutado com sucesso!`, "warning");
-    // Atualizar a exibição de posts
     refreshPostsDisplay();
   }
 }
@@ -39,18 +59,17 @@ function unmuteUser(username) {
   const index = moderationSettings.mutedUsers.indexOf(username);
   if (index !== -1) {
     moderationSettings.mutedUsers.splice(index, 1);
-    saveMutedUsers();
+    saveSettings();
     showNotification(`Usuário ${username} desmutado!`, "info");
-    // Atualizar a exibição de posts
     refreshPostsDisplay();
   }
 }
 
 // Função para verificar se um usuário está mutado
 function isUserMuted(username) {
-  return moderationSettings.mutedUsers.includes(username);
+  return Array.isArray(moderationSettings.mutedUsers) &&
+         moderationSettings.mutedUsers.includes(username);
 }
-
 
 // Atualizar exibição de posts com filtro de usuários mutados
 function refreshPostsDisplay() {
@@ -84,24 +103,12 @@ function refreshPostsDisplay() {
   document.getElementById("nextPage").disabled = currentPage === totalPages;
 }
 
-// Carregar configurações do localStorage
-function loadSettings() {
-  const savedSettings = localStorage.getItem("moderationSettings");
-  if (savedSettings) {
-    moderationSettings = {
-      ...moderationSettings,
-      ...JSON.parse(savedSettings),
-    };
-  }
-  return moderationSettings;
-}
-
 // Salvar configurações no localStorage
 function saveSettings() {
-  localStorage.setItem(
-    "moderationSettings",
-    JSON.stringify(moderationSettings)
-  );
+  localStorage.setItem("moderationSettings", JSON.stringify({
+    ...moderationSettings,
+    mutedUsers: moderationSettings.mutedUsers, // garante que mutedUsers seja salvo junto
+  }));
   showNotification("Configurações salvas com sucesso!", "success");
   applySettings();
 }
@@ -110,14 +117,14 @@ function saveSettings() {
 function applySettings() {
   // Aplicar tema
   document.body.classList.remove("theme-light", "theme-dark");
-  if (moderationSettings.theme === "dark") {
+  if (moderationSettings?.theme === "dark") {
     document.body.classList.add("theme-dark");
   } else {
     document.body.classList.add("theme-light");
   }
 
   // Aplicar posts por página
-  postsPerPage = moderationSettings.postsPerPage;
+  postsPerPage = moderationSettings?.postsPerPage;
   const postsPerPageSelect = document.getElementById("postsPerPage");
   if (postsPerPageSelect) {
     postsPerPageSelect.value = postsPerPage.toString();
@@ -391,21 +398,29 @@ function openSettingsModal() {
   const modal = document.getElementById("settingsModal");
   if (!modal) return;
 
-  // Preencher os campos com as configurações atuais
+  // Campo checkbox — se undefined, vira false
   document.getElementById("autoFlagSpam").checked =
-    moderationSettings.autoFlagSpam;
+    !!moderationSettings?.autoFlagSpam;
+
   document.getElementById("autoFlagPlagiarism").checked =
-    moderationSettings.autoFlagPlagiarism;
+    !!moderationSettings?.autoFlagPlagiarism;
+
   document.getElementById("notifyHighPayout").checked =
-    moderationSettings.notifyHighPayout;
+    !!moderationSettings?.notifyHighPayout;
+
+  // Campo numérico — se undefined, vira ""
   document.getElementById("payoutAlertThreshold").value =
-    moderationSettings.payoutAlertThreshold;
-  document.getElementById("themeSelect").value = moderationSettings.theme;
+    moderationSettings?.payoutAlertThreshold ?? "";
+
+  document.getElementById("themeSelect").value =
+    moderationSettings?.theme ?? "light";
+
   document.getElementById("postsPerPageSetting").value =
-    moderationSettings.postsPerPage;
+    moderationSettings?.postsPerPage ?? 25;
 
   modal.classList.remove("hidden");
 }
+
 
 // Função para fechar modais
 function closeModal(modalId) {
@@ -614,7 +629,7 @@ function createPostCard(post) {
   const payoutValue = parseFloat(post.pending_payout_value || 0);
 
   // Truncar título se for muito longo
-  const title = escapeHTML(post.title) || "Sem título";
+  const title = escapeHTML(post.title) || "";
   const shortTitle = title.length > 50 ? title.substring(0, 50) + "..." : title;
 
   // Truncar conteúdo
@@ -635,10 +650,11 @@ function createPostCard(post) {
   }
 
   div.innerHTML = `
-        <div class="post-card-header">
-            <span class="post-author">${post.author}</span>
-            <span class="post-payout">$${payoutValue.toFixed(2)}</span>
-        </div>
+  <div class="post-card-header ${post.parent_author ? "parented" : ""}">
+      <span class="post-author">@${post.author}</span>
+      ${post.parent_author ? '<span class="post-type">Comentário</span>' : '<span class="post-type">Post</span>'}
+      <span class="post-payout">$${payoutValue.toFixed(2)}</span>
+  </div>
         <div class="post-card-body">
             <h3 class="post-title">${shortTitle}</h3>
             <p class="post-excerpt">${shortContent}</p>
@@ -711,12 +727,12 @@ function createPostCard(post) {
 function openMutedUsersManager() {
   const modal = document.getElementById("mutedUsersModal");
   const container = document.getElementById("mutedUsersList");
-  
+
   if (!modal || !container) return;
-  
+
   // Limpar lista
   container.innerHTML = '';
-  
+
   if (moderationSettings.mutedUsers.length === 0) {
     container.innerHTML = '<div class="no-muted-users">Nenhum usuário mutado</div>';
   } else {
@@ -731,17 +747,17 @@ function openMutedUsersManager() {
       `;
       container.appendChild(userElement);
     });
-    
-    // Adicionar eventos aos botões de desmutar
+
+    // Eventos de desmutar
     container.querySelectorAll('.unmute-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         const username = this.getAttribute('data-username');
         unmuteUser(username);
-        openMutedUsersManager(); // Recarregar a lista
+        openMutedUsersManager(); // recarrega a lista
       });
     });
   }
-  
+
   modal.classList.remove('hidden');
 }
 
@@ -1049,9 +1065,9 @@ function toggleFlagPost(postId, refresh = false) {
 
     // Notificar se o payout for alto e a opção estiver ativada
     const post = allPosts.find((p) => p.id == postId);
-    if (post && moderationSettings.notifyHighPayout) {
+    if (post && moderationSettings?.notifyHighPayout) {
       const payout = parseFloat(post.pending_payout_value || 0);
-      if (payout > moderationSettings.payoutAlertThreshold) {
+      if (payout > moderationSettings?.payoutAlertThreshold) {
         showNotification(
           `⚠️ Post com alto payout ($${payout.toFixed(2)}) sinalizado!`,
           "warning"
@@ -1721,7 +1737,7 @@ function scanForSpam() {
       );
 
       // Se auto-flag ativado
-      if (moderationSettings.autoFlagSpam) {
+      if (moderationSettings?.autoFlagSpam) {
         potentialSpam.forEach((post) => {
           if (!flaggedPosts[post.id]) {
             flaggedPosts[post.id] = {
@@ -1794,7 +1810,7 @@ function scanForPlagiarism() {
       );
 
       // Usar configuração de auto-flag
-      if (moderationSettings.autoFlagPlagiarism) {
+      if (moderationSettings?.autoFlagPlagiarism) {
         potentialPlagiarism.forEach((post) => {
           if (!flaggedPosts[post.id]) {
             flaggedPosts[post.id] = {
@@ -1876,8 +1892,40 @@ Estatísticas do Cache:
 }
 
 async function clearCache() {
-    //clearChace of BrowserOnly
+  return new Promise(resolve => {
+    const keys = [
+      'flaggedPosts',
+      'mutedUsers',
+      'moderationSettings'
+    ];
+
+    // Limpa localStorage
+    keys.forEach(k => localStorage.removeItem(k));
+
+    // Resetar o objeto em memória
+    moderationSettings = {
+      autoFlagSpam: true,
+      autoFlagPlagiarism: true,
+      notifyHighPayout: true,
+      payoutAlertThreshold: 100,
+      theme: "light",
+      postsPerPage: 25,
+      mutedUsers: [], // array limpo
+    };
+
+    // Atualizar a interface de posts
+    refreshPostsDisplay();
+
+    // Se tiver modal de usuários mutados aberto, atualizar também
+    if (typeof openMutedUsersManager === "function") {
+      openMutedUsersManager();
+    }
+
+    resolve(true);
+  });
 }
+
+
 
 // Mostrar detalhes do post
 function showPostDetail(post) {
