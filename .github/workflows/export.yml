@@ -29,43 +29,19 @@ jobs:
           PGPASSWORD: hafsql_public
         run: |
           psql -c "\copy (
-            SELECT json_build_object(
-              'id', id,
-              'title', title,
-              'body', body,
-              'author', author,
-              'permlink', permlink,
-              'parent_author', parent_author,
-              'parent_permlink', parent_permlink,
-              'created', created,
-              'last_edited', last_edited,
-              'cashout_time', cashout_time,
-              'remaining_till_cashout', remaining_till_cashout,
-              'last_payout', last_payout,
-              'tags', tags,
-              'category', category,
-              'json_metadata', json_metadata,
-              'root_author', root_author,
-              'root_permlink', root_permlink,
-              'pending_payout_value', pending_payout_value,
-              'author_rewards', author_rewards,
-              'author_rewards_in_hive', author_rewards_in_hive,
-              'total_payout_value', total_payout_value,
-              'curator_payout_value', curator_payout_value,
-              'beneficiary_payout_value', beneficiary_payout_value,
-              'total_rshares', total_rshares,
-              'net_rshares', net_rshares,
-              'total_vote_weight', total_vote_weight,
-              'beneficiaries', beneficiaries,
-              'max_accepted_payout', max_accepted_payout,
-              'percent_hbd', percent_hbd,
-              'allow_votes', allow_votes,
-              'allow_curation_rewards', allow_curation_rewards,
-              'deleted', deleted
-            )::text
-            FROM hafsql.comments
-            WHERE created >= NOW() - INTERVAL '24 hours'
-            ORDER BY created DESC
+            SELECT json_agg(row_to_json(t))
+            FROM (
+              SELECT id, title, body, author, permlink, parent_author, parent_permlink, created,
+                     last_edited, cashout_time, remaining_till_cashout, last_payout, tags, category,
+                     json_metadata, root_author, root_permlink, pending_payout_value, author_rewards,
+                     author_rewards_in_hive, total_payout_value, curator_payout_value, beneficiary_payout_value,
+                     total_rshares, net_rshares, total_vote_weight, beneficiaries, max_accepted_payout,
+                     percent_hbd, allow_votes, allow_curation_rewards, deleted
+              FROM hafsql.comments
+              WHERE created >= NOW() - INTERVAL '24 hours'
+              ORDER BY created DESC
+              LIMIT 24443
+            ) t
           ) TO STDOUT" > data.json
 
       - name: Upload file to Release
