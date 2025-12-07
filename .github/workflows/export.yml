@@ -40,7 +40,6 @@ jobs:
               FROM hafsql.comments
               WHERE created >= NOW() - INTERVAL '24 hours'
               ORDER BY created DESC
-              LIMIT 24443
             ) t
           ) TO STDOUT" > data.json
 
