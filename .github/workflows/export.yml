@@ -32,13 +32,14 @@ jobs:
             SELECT row_to_json(t)
             FROM (
                 SELECT id, title, body, author, permlink, parent_author, parent_permlink, created,
-                       last_edited, cashout_time, remaining_till_cashout, last_payout, tags, category,
+                       last_edited, cashout_time, remaining_till_cashout, tags, category,
                        json_metadata, root_author, root_permlink, pending_payout_value, author_rewards,
-                       author_rewards_in_hive, total_payout_value, curator_payout_value, beneficiary_payout_value,
+                       total_payout_value, curator_payout_value, beneficiary_payout_value,
                        total_rshares, net_rshares, total_vote_weight, beneficiaries, max_accepted_payout,
                        percent_hbd, allow_votes, allow_curation_rewards, deleted
                 FROM hafsql.comments
                 WHERE created >= NOW() - INTERVAL '24 hours'
+                  AND author NOT IN ('ai-summaries', 'kgakakillerg','taskmaster4450le','ben.haase','conscript','hivebuzz','actifit','pizzabot','ladytoken','redditposh')
                 ORDER BY created DESC
             ) t
           ) TO STDOUT" > data.json
