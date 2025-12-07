@@ -497,7 +497,7 @@ async function loadPosts() {
   loadingElement.classList.remove("hidden");
 
   try {
-    const response = await fetch("./data.json");
+    const response = await fetch("https://github.com/faireye-hive/hive-cache/releases/download/latest/data.json");
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
