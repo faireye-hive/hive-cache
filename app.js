@@ -579,40 +579,50 @@ async function loadPosts() {
   }
 }
 
-/*
-// Atualizar exibição de posts
-function updatePostsDisplay() {
-  const container = document.getElementById("postsContainer");
-  const pageInfo = document.getElementById("pageInfo");
-
-  if (filteredPosts.length === 0) {
-    container.innerHTML = '<div class="no-posts">Nenhum post encontrado</div>';
-    pageInfo.textContent = "Página 1 de 1";
-    return;
-  }
-
-  const startIndex = (currentPage - 1) * postsPerPage;
-  const endIndex = startIndex + postsPerPage;
-  const pagePosts = filteredPosts.slice(startIndex, endIndex);
-
-  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-  pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-
-  container.innerHTML = "";
-  pagePosts.forEach((post) => {
-    const postElement = createPostCard(post);
-    container.appendChild(postElement);
-  });
-
-  // Atualizar estado dos botões de paginação
-  document.getElementById("prevPage").disabled = currentPage === 1;
-  document.getElementById("nextPage").disabled = currentPage === totalPages;
-}*/
-
 // Atualizar exibição de posts
 function updatePostsDisplay() {
   refreshPostsDisplay(); // Substitua o conteúdo existente por esta chamada
 }
+
+function countApps(posts) {
+  const appCounts = {};
+  const userAppMap = {};
+
+  posts.forEach(post => {
+    const user = post.author;
+    let app = post.json_metadata?.app || "Desconhecido";
+
+    // Normalizar o app: extrair nome antes da barra e ignorar versão
+    // Ex: "actifit/0.12.4" => "actifit"
+    const match = app.match(/^([a-zA-Z0-9\-]+)\//);
+    if (match) {
+      app = match[1].toLowerCase();
+    } else {
+      app = app.toLowerCase();
+    }
+
+    if (!userAppMap[user]) userAppMap[user] = new Set();
+
+    // Contar 1 post por usuário por app
+    if (!userAppMap[user].has(app)) {
+      userAppMap[user].add(app);
+      appCounts[app] = (appCounts[app] || 0) + 1;
+    }
+  });
+
+  return appCounts;
+}
+
+
+
+function saveAppCounts(appCounts) {
+  sessionStorage.setItem("appCounts", JSON.stringify(appCounts));
+}
+
+function loadAppCounts() {
+  return JSON.parse(sessionStorage.getItem("appCounts") || "{}");
+}
+
 
 // Criar card de post
 function createPostCard(post) {
@@ -660,6 +670,7 @@ function createPostCard(post) {
             <p class="post-excerpt">${shortContent}</p>
             <div class="post-tags">${tagsHtml}</div>
             <div class="risk-badge risk-${riskLevel}">${riskLevel.toUpperCase()}</div>
+            <div class="post-app">App: ${post.json_metadata.app || "Desconhecido"}</div>
         </div>
         <div class="post-card-footer">
             <span class="post-date">${formatDate(post.created)}</span>
@@ -733,7 +744,7 @@ function openMutedUsersManager() {
   // Limpar lista
   container.innerHTML = '';
 
-  if (moderationSettings.mutedUsers.length === 0) {
+  if (moderationSettings?.mutedUsers?.length === 0) {
     container.innerHTML = '<div class="no-muted-users">Nenhum usuário mutado</div>';
   } else {
     moderationSettings.mutedUsers.forEach(username => {
@@ -1365,6 +1376,55 @@ function createCharts() {
         },
       });
     }
+
+// Gráfico de Top Apps
+const ctx3 = document.getElementById("topAppChart");
+if (ctx3) {
+  const appCounts = countApps(allPosts); // função que já criamos
+  const sortedApps = Object.entries(appCounts)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 10); // top 10 apps
+
+  new Chart(ctx3, {
+    type: "doughnut",
+    data: {
+      labels: sortedApps.map(a => a[0]),
+      datasets: [{
+        data: sortedApps.map(a => a[1]),
+        backgroundColor: [
+          "#FF6384","#36A2EB","#FFCE56","#4BC0C0","#9966FF",
+          "#FF9F40","#FF6384","#C9CBCF","#8AC926","#FF595E"
+        ],
+        borderColor: "#ffffff",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "right",
+          labels: {
+            boxWidth: 20,
+            padding: 15
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value} Users`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+
+    
   } catch (error) {
     console.warn("Erro ao criar gráficos:", error);
   }
@@ -1415,7 +1475,7 @@ function updateStatsSummary() {
 function calculateRiskLevel(post) {
   let riskScore = 0;
 
-  const commandRegex = /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt)\b/i;
+  const commandRegex = /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt|summarize)\b/i;
 
   if (commandRegex.test(post.body || "")) {
     riskScore += 2;
@@ -1779,6 +1839,82 @@ function scanForSpam() {
     }
 
   }, 2000);
+}
+
+
+// Plagio funções que ajudam
+
+    // Detecta palavras estranhas proibidas, sinais de golpe, menções a dinheiro/transferência, pedidos de contato externo.
+function keywordDetector(post, keywords = [], minMatches = 1) {
+  const text = (post.title + " " + post.body).toLowerCase();
+  let matches = [];
+  keywords.forEach(k => {
+    if (text.includes(k.toLowerCase())) matches.push(k);
+  });
+  const score = Math.min(1, matches.length / Math.max(1, minMatches));
+  return { score, reason: matches.length ? `keywords:${matches.join(",")}` : null, matches };
+}
+
+  //Detecta muitos links, rediretores, domínios conhecidos por spam, urls curtas (bit.ly), links para fora com parâmetros longos.
+function linkDetector(post, maxLinks = 2, blacklistDomains = ['bit.ly','tinyurl.com','spamdomain.com']) {
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  const text = (post.title + " " + post.body) || "";
+  const urls = text.match(urlRegex) || [];
+  const domains = urls.map(u => {
+    try { return (new URL(u)).hostname.replace(/^www\./,''); } catch { return null; }
+  }).filter(Boolean);
+  const blacklisted = domains.filter(d => blacklistDomains.includes(d));
+  const score = Math.min(1, (urls.length > maxLinks ? 1 : urls.length / maxLinks) + (blacklisted.length ? 0.7 : 0));
+  return { score, reason: `links:${urls.length}`, urls, blacklisted };
+}
+  //AI detect
+  const STOPWORDS = new Set(['the','and','a','to','of','in','is','that','it','on','for' /*...*/]);
+
+  function aiHeuristicDetector(post) {
+    const text = (post.title + " " + post.body || '').toLowerCase();
+    const words = text.match(/\b[\w']+\b/g) || [];
+    if (words.length < 30) return { score: 0, reason: null }; // muito curto pra avaliar
+    // taxa de stopwords
+    const stopCount = words.filter(w => STOPWORDS.has(w)).length;
+    const stopRatio = stopCount / words.length;
+    // repetição de n-gramos
+    const ngrams = {};
+    for (let i=0;i<words.length-2;i++){
+      const ng = words.slice(i,i+3).join(' ');
+      ngrams[ng] = (ngrams[ng]||0)+1;
+    }
+    const repeatNgrams = Object.values(ngrams).filter(v=>v>1).length;
+    // heurística combinada
+    let score = 0;
+    if (stopRatio > 0.5) score += 0.1;
+    if (repeatNgrams > Math.max(1, words.length/100)) score += 0.4;
+    // penaliza se muitas transições formais
+    const transitions = ['however','moreover','furthermore','therefore','consequently'];
+    const transCount = words.filter(w=>transitions.includes(w)).length;
+    if (transCount > Math.max(1, words.length/200)) score += 0.2;
+
+    return { score: Math.min(1, score), reason: `aiHeuristics stopRatio:${stopRatio.toFixed(2)} repeats:${repeatNgrams}` };
+  }
+
+async function scanPostAdvanced(post) {
+  const detectors = [
+    keywordDetector(post, ['transfer','whatsapp','contact','buy now']),
+    linkDetector(post),
+    aiHeuristicDetector(post)
+  ];
+
+  // soma ponderada
+  const weights = [0.6, 0.5, 0.6, 0.7, 0.8, 0.6];
+  let total = 0, max = 0;
+  const reasons = [];
+  detectors.forEach((d,i) => {
+    const s = d.score || 0;
+    total += s * weights[i];
+    max += weights[i];
+    if (d.reason) reasons.push(d.reason);
+  });
+  const finalScore = total / max; // 0..1
+  return {score: finalScore, reasons};
 }
 
 
