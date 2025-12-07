@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "0 */24 * * *"   # roda a cada 24h
   workflow_dispatch:          # permite rodar manualmente
+  
+permissions:
+  contents: write
+
 
 jobs:
   export:
