@@ -1138,3 +1138,22 @@ body {
   background-color: #d4edda; /* verde claro */
   color: #155724;
 }
+
+/* Nova classe para exibir o App que gerou o post */
+.post-app {
+  font-size: 0.85rem;
+  color: #555555;        /* cinza médio */
+  background-color: #f0f0f0; /* cinza claro */
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 500;
+  font-family: sans-serif;
+}
+
+/* Se quiser destacar apps específicos, você pode usar data-attribute ou class extra */
+.post-app[data-app="Hive.blog"] {
+  background-color: #e0f7fa;
+  color: #006064;
+}
