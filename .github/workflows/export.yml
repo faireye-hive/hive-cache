@@ -43,10 +43,21 @@ jobs:
             ) t
           ) TO STDOUT" > data.json
 
-      - name: Upload file to Release
-        uses: softprops/action-gh-release@v2
+# --- PASSO NOVO: FAZER COMMIT DO ARQUIVO GERADO ---
+      - name: Commit and Push data.json 🚀
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          tag_name: latest
-          files: data.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Salva data.json no repositório. O GitHub Pages servirá isso sem erro CORS.
+          commit_message: "Automatic update: data.json cache (NDJSON)"
+          branch: main # Mantenha a branch que o seu Pages está configurado para ler
+          file_pattern: data.json
+
+# ---
+
+ # ---     - name: Upload file to Release
+# ---        uses: softprops/action-gh-release@v2
+# ---        with:
+# ---          tag_name: latest
+# ---          files: data.json
+# ---        env:
+# ---          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
