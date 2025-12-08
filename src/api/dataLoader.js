@@ -20,7 +20,7 @@ export async function loadPosts() {
   loadingElement.classList.remove("hidden");
 
   try {
-    const response = await fetch("../../data.json");
+    const response = await fetch("./data.json");
     // ... restante da lógica de loadPosts, movendo todas as reatribuições de
     // allPosts e filteredPosts para setAllPosts e setFilteredPosts ...
 
