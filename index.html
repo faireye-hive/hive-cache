@@ -288,23 +288,34 @@
                 </div>
             </section>
 
-            <!-- Seção: Sinalizados -->
-            <section id="flagged-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-flag"></i> Posts Sinalizados</h2>
-                    <div class="flag-actions">
-                        <button id="clearFlagsBtn" class="btn-action">
-                            <i class="fas fa-check-circle"></i> Limpar Flags
-                        </button>
-                        <button id="exportFlagsBtn" class="btn-action">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
-                    </div>
-                </div>
-                <div class="flagged-container" id="flaggedContainer">
-                    <!-- Posts sinalizados serão carregados aqui -->
-                </div>
-            </section>
+<!-- Seção: Sinalizados -->
+<section id="flagged-section" class="content-section">
+    <div class="section-header">
+        <h2><i class="fas fa-flag"></i> Posts Sinalizados</h2>
+        <div class="flag-actions">
+            <button id="clearFlagsBtn" class="btn-action">
+                <i class="fas fa-check-circle"></i> Limpar Flags
+            </button>
+            <button id="exportFlagsBtn" class="btn-action">
+                <i class="fas fa-download"></i> Exportar
+            </button>
+        </div>
+    </div>
+
+    <!-- Paginação no topo -->
+    <div id="flaggedPaginationTop" class="pagination"></div>
+    
+    <!-- Container dos posts sinalizados -->
+    <div class="flagged-container" id="flaggedContainer">
+        <!-- Posts sinalizados serão carregados aqui -->
+    </div>
+
+    <!-- Container da paginação -->
+    <div id="flaggedPagination" class="pagination">
+        <!-- Botões de página serão criados dinamicamente -->
+    </div>
+</section>
+
 
             <!-- Seção: Busca Avançada -->
             <section id="search-section" class="content-section">
