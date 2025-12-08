@@ -1,544 +1,660 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hive Moderation Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <!-- Sistema de Login -->
     <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2><i class="fas fa-user-shield"></i> Login de Moderação</h2>
-            <div class="login-options">
-                <button id="hiveKeychainLogin" class="btn-login">
-                    <i class="fas fa-key"></i> Login com Hive Keychain
-                </button>
-                <button id="manualLogin" class="btn-login">
-                    <i class="fas fa-user"></i> Login Manual
-                </button>
-                <div id="manualLoginForm" class="hidden">
-                    <input type="text" id="username" placeholder="Nome de usuário" class="form-input">
-                    <input type="password" id="password" placeholder="Chave de postagem" class="form-input">
-                    <button id="submitManualLogin" class="btn-primary">Entrar</button>
-                </div>
-            </div>
-            <p class="note">* Apenas moderadores autorizados podem acessar este painel</p>
+      <div class="modal-content">
+        <h2><i class="fas fa-user-shield"></i> Login de Moderação</h2>
+        <div class="login-options">
+          <button id="hiveKeychainLogin" class="btn-login">
+            <i class="fas fa-key"></i> Login com Hive Keychain
+          </button>
+          <button id="manualLogin" class="btn-login">
+            <i class="fas fa-user"></i> Login Manual
+          </button>
+          <div id="manualLoginForm" class="hidden">
+            <input
+              type="text"
+              id="username"
+              placeholder="Nome de usuário"
+              class="form-input"
+            />
+            <input
+              type="password"
+              id="password"
+              placeholder="Chave de postagem"
+              class="form-input"
+            />
+            <button id="submitManualLogin" class="btn-primary">Entrar</button>
+          </div>
         </div>
+        <p class="note">
+          * Apenas moderadores autorizados podem acessar este painel
+        </p>
+      </div>
     </div>
 
     <!-- Barra de Navegação -->
     <nav class="navbar">
-        <div class="nav-brand">
-            <i class="fas fa-hive"></i>
-            <h1>Hive Moderation Dashboard</h1>
-        </div>
-        <div class="nav-user" id="userInfo">
-    <span id="currentUser">Não logado</span>
-    
-    <!-- Botão de Configurações (novo) -->
-    <button id="settingsBtn" class="btn-icon" title="Configurações">
-        <i class="fas fa-cog"></i>
-    </button>
-    
-    <button id="logoutBtn" class="btn-logout hidden">
-        <i class="fas fa-sign-out-alt"></i> Sair
-    </button>
-</div>
+      <div class="nav-brand">
+        <i class="fas fa-hive"></i>
+        <h1>Hive Moderation Dashboard</h1>
+      </div>
+      <div class="nav-user" id="userInfo">
+        <span id="currentUser">Não logado</span>
+
+        <!-- Botão de Configurações (novo) -->
+        <button id="settingsBtn" class="btn-icon" title="Configurações">
+          <i class="fas fa-cog"></i>
+        </button>
+
+        <button id="logoutBtn" class="btn-logout hidden">
+          <i class="fas fa-sign-out-alt"></i> Sair
+        </button>
+      </div>
     </nav>
 
     <!-- Barra de Ferramentas -->
     <div class="toolbar">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Buscar por autor, título, conteúdo, tags...">
-            <select id="searchFilter">
-                <option value="all">Tudo</option>
-                <option value="author">Autor</option>
-                <option value="title">Título</option>
-                <option value="content">Conteúdo</option>
-                <option value="tags">Tags</option>
-            </select>
-        </div>
-        <div class="toolbar-actions">
-            <button id="refreshBtn" class="btn-action">
-                <i class="fas fa-sync-alt"></i> Atualizar
-            </button>
-            <button id="cacheStatsBtn" class="btn-action">
-                <i class="fas fa-chart-bar"></i> Cache Stats
-            </button>
-            <button id="clearCacheBtn" class="btn-action btn-danger">
-                <i class="fas fa-trash"></i> Limpar Cache
-            </button>
-<button id="mutedUsersBtn" class="btn-primary" title="Gerenciar usuários mutados">
-  <i class="fas fa-user-slash"></i> Usuários Mutados
-</button>
-
-        </div>
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Buscar por autor, título, conteúdo, tags..."
+        />
+        <select id="searchFilter">
+          <option value="all">Tudo</option>
+          <option value="author">Autor</option>
+          <option value="title">Título</option>
+          <option value="content">Conteúdo</option>
+          <option value="tags">Tags</option>
+        </select>
+      </div>
+      <div class="toolbar-actions">
+        <button id="refreshBtn" class="btn-action">
+          <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+        <button id="cacheStatsBtn" class="btn-action">
+          <i class="fas fa-chart-bar"></i> Cache Stats
+        </button>
+        <button id="clearCacheBtn" class="btn-action btn-danger">
+          <i class="fas fa-trash"></i> Limpar Cache
+        </button>
+        <button
+          id="mutedUsersBtn"
+          class="btn-primary"
+          title="Gerenciar usuários mutados"
+        >
+          <i class="fas fa-user-slash"></i> Usuários Mutados
+        </button>
+      </div>
     </div>
 
     <!-- Conteúdo Principal -->
     <div class="container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-section">
-                <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
-                <ul class="nav-menu">
-                    <li class="active" data-section="posts"><i class="fas fa-newspaper"></i> Posts Recentes</li>
-                    <li data-section="ranking-posts"><i class="fas fa-trophy"></i> Ranking por Posts</li>
-                    <li data-section="ranking-payout"><i class="fas fa-money-bill-wave"></i> Ranking por Payout</li>
-                    <li data-section="moderation"><i class="fas fa-user-shield"></i> Moderação</li>
-                    <li data-section="flagged"><i class="fas fa-flag"></i> Sinalizados</li>
-                    <li data-section="search"><i class="fas fa-search"></i> Busca Avançada</li>
-                    <li data-section="stats"><i class="fas fa-chart-pie"></i> Estatísticas</li>
-                </ul>
-            </div>
-            
-            <div class="sidebar-section">
-                <h3><i class="fas fa-filter"></i> Filtros Rápidos</h3>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">Todos</button>
-                    <button class="filter-btn" data-filter="last-hour">Última Hora</button>
-                    <button class="filter-btn" data-filter="last-6h">Últimas 6h</button>
-                    <button class="filter-btn" data-filter="high-payout">Alto Payout</button>
-                    <button class="filter-btn" data-filter="flagged">Sinalizados</button>
-                    <button class="filter-btn" data-filter="deleted">Deletados</button>
-                </div>
-            </div>
-            
-            <div class="sidebar-section">
-                <h3><i class="fas fa-chart-line"></i> Status do Sistema</h3>
-                <div class="status-info">
-                    <div class="status-item">
-                        <span class="status-label">Posts em Cache:</span>
-                        <span id="cacheCount" class="status-value">0</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Última Atualização:</span>
-                        <span id="lastUpdate" class="status-value">-</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Usuários Online:</span>
-                        <span id="onlineUsers" class="status-value">1</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="status-label">Posts Sinalizados:</span>
-                        <span id="flaggedCount" class="status-value">0</span>
-                    </div>
-                </div>
-            </div>
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
+          <ul class="nav-menu">
+            <li class="active" data-section="posts">
+              <i class="fas fa-newspaper"></i> Posts Recentes
+            </li>
+            <li data-section="ranking-posts">
+              <i class="fas fa-trophy"></i> Ranking por Posts
+            </li>
+            <li data-section="ranking-payout">
+              <i class="fas fa-money-bill-wave"></i> Ranking por Payout
+            </li>
+            <li data-section="moderation">
+              <i class="fas fa-user-shield"></i> Moderação
+            </li>
+            <li data-section="flagged">
+              <i class="fas fa-flag"></i> Sinalizados
+            </li>
+            <li data-section="search">
+              <i class="fas fa-search"></i> Busca Avançada
+            </li>
+            <li data-section="stats">
+              <i class="fas fa-chart-pie"></i> Estatísticas
+            </li>
+          </ul>
         </div>
 
-        <!-- Conteúdo Principal -->
-        <main class="main-content">
-            <!-- Seção: Posts Recentes -->
-            <section id="posts-section" class="content-section active">
-                <div class="section-header">
-                    <h2><i class="fas fa-newspaper"></i> Posts Recentes</h2>
-                    <div class="section-controls">
-                        <div class="pagination">
-                            <button id="prevPage" class="btn-pagination"><i class="fas fa-chevron-left"></i></button>
-                            <span id="pageInfo">Página 1</span>
-                            <button id="nextPage" class="btn-pagination"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                        <select id="postsPerPage">
-                            <option value="10">10 por página</option>
-                            <option value="25" selected>25 por página</option>
-                            <option value="50">50 por página</option>
-                            <option value="100">100 por página</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="posts-container" id="postsContainer">
-                    <!-- Posts serão carregados aqui via JavaScript -->
-                </div>
-                
-                <div class="loading" id="loadingPosts">
-                    <i class="fas fa-spinner fa-spin"></i> Carregando posts...
-                </div>
-            </section>
+        <div class="sidebar-section">
+          <h3><i class="fas fa-filter"></i> Filtros Rápidos</h3>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">Todos</button>
+            <button class="filter-btn" data-filter="last-hour">
+              Última Hora
+            </button>
+            <button class="filter-btn" data-filter="last-6h">Últimas 6h</button>
+            <button class="filter-btn" data-filter="high-payout">
+              Alto Payout
+            </button>
+            <button class="filter-btn" data-filter="flagged">
+              Sinalizados
+            </button>
+            <button class="filter-btn" data-filter="deleted">Deletados</button>
+          </div>
+        </div>
 
-            <!-- Seção: Ranking por Posts -->
-            <section id="ranking-posts-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-trophy"></i> Ranking por Total de Posts</h2>
-                    <div class="time-filter">
-                        <select id="rankingTimeFilter">
-                            <option value="24">Últimas 24h</option>
-                            <option value="72">Últimas 72h</option>
-                            <option value="168" selected>Última semana</option>
-                            <option value="720">Últimos 30 dias</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="ranking-container" id="rankingPostsContainer">
-                    <!-- Ranking será carregado aqui -->
-                </div>
-            </section>
+        <div class="sidebar-section">
+          <h3><i class="fas fa-chart-line"></i> Status do Sistema</h3>
+          <div class="status-info">
+            <div class="status-item">
+              <span class="status-label">Posts em Cache:</span>
+              <span id="cacheCount" class="status-value">0</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Última Atualização:</span>
+              <span id="lastUpdate" class="status-value">-</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Usuários Online:</span>
+              <span id="onlineUsers" class="status-value">1</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Posts Sinalizados:</span>
+              <span id="flaggedCount" class="status-value">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <!-- Seção: Ranking por Payout -->
-            <section id="ranking-payout-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-money-bill-wave"></i> Ranking por Payout Pendente</h2>
-                    <div class="time-filter">
-                        <select id="payoutTimeFilter">
-                            <option value="24">Últimas 24h</option>
-                            <option value="72">Últimas 72h</option>
-                            <option value="168" selected>Última semana</option>
-                            <option value="720">Últimos 30 dias</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="ranking-container" id="rankingPayoutContainer">
-                    <!-- Ranking de payout será carregado aqui -->
-                </div>
-            </section>
+      <!-- Conteúdo Principal -->
+      <main class="main-content">
+        <!-- Seção: Posts Recentes -->
+        <section id="posts-section" class="content-section active">
+          <div class="section-header">
+            <h2><i class="fas fa-newspaper"></i> Posts Recentes</h2>
+            <div class="section-controls">
+              <div class="pagination">
+                <button id="prevPage" class="btn-pagination">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <span id="pageInfo">Página 1</span>
+                <button id="nextPage" class="btn-pagination">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+              <select id="postsPerPage">
+                <option value="10">10 por página</option>
+                <option value="25" selected>25 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+              </select>
+            </div>
+          </div>
 
-            <!-- Seção: Moderação -->
-            <section id="moderation-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-user-shield"></i> Painel de Moderação</h2>
-                    <div class="moderation-tools">
-                        <button id="scanSpamBtn" class="btn-action">
-                            <i class="fas fa-robot"></i> Verificar Spam
-                        </button>
-                        <button id="scanPlagiarismBtn" class="btn-action">
-                            <i class="fas fa-copy"></i> Verificar Plágio
-                        </button>
-                        <button id="bulkActionBtn" class="btn-action btn-danger">
-                            <i class="fas fa-ban"></i> Ação em Massa
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="moderation-filters">
-                    <div class="filter-group">
-                        <label><input type="checkbox" id="filterSpam" checked> Spam</label>
-                        <label><input type="checkbox" id="filterPlagiarism" checked> Plágio</label>
-                        <label><input type="checkbox" id="filterAbuse" checked> Abuso</label>
-                        <label><input type="checkbox" id="filterScam" checked> Scam</label>
-                        <label><input type="checkbox" id="filterNSFW" checked> NSFW</label>
-                    </div>
-                    <div class="filter-group">
-                        <input type="text" id="modAuthorFilter" placeholder="Filtrar por autor...">
-                        <input type="number" id="minPayoutFilter" placeholder="Payout mínimo" value="10">
-                    </div>
-                </div>
-                
-                <div class="moderation-table-container">
-                    <table class="moderation-table">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
-                                <th>Autor</th>
-                                <th>Título</th>
-                                <th>Payout</th>
-                                <th>Risco</th>
-                                <th>Flag</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="moderationTableBody">
-                            <!-- Conteúdo da moderação será carregado aqui -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="moderation-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon high-risk">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-label">Alto Risco</span>
-                            <span class="stat-value" id="highRiskCount">0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon medium-risk">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-label">Médio Risco</span>
-                            <span class="stat-value" id="mediumRiskCount">0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon low-risk">
-                            <i class="fas fa-info-circle"></i>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-label">Baixo Risco</span>
-                            <span class="stat-value" id="lowRiskCount">0</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon total-flagged">
-                            <i class="fas fa-flag"></i>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-label">Total Sinalizado</span>
-                            <span class="stat-value" id="totalFlaggedCount">0</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+          <div class="posts-container" id="postsContainer">
+            <!-- Posts serão carregados aqui via JavaScript -->
+          </div>
 
-<!-- Seção: Sinalizados -->
-<section id="flagged-section" class="content-section">
-    <div class="section-header">
-        <h2><i class="fas fa-flag"></i> Posts Sinalizados</h2>
-        <div class="flag-actions">
-            <button id="clearFlagsBtn" class="btn-action">
+          <div class="loading" id="loadingPosts">
+            <i class="fas fa-spinner fa-spin"></i> Carregando posts...
+          </div>
+        </section>
+
+        <!-- Seção: Ranking por Posts -->
+        <section id="ranking-posts-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-trophy"></i> Ranking por Total de Posts</h2>
+            <div class="time-filter">
+              <select id="rankingTimeFilter">
+                <option value="24">Últimas 24h</option>
+                <option value="72">Últimas 72h</option>
+                <option value="168" selected>Última semana</option>
+                <option value="720">Últimos 30 dias</option>
+              </select>
+            </div>
+          </div>
+          <div class="ranking-container" id="rankingPostsContainer">
+            <!-- Ranking será carregado aqui -->
+          </div>
+        </section>
+
+        <!-- Seção: Ranking por Payout -->
+        <section id="ranking-payout-section" class="content-section">
+          <div class="section-header">
+            <h2>
+              <i class="fas fa-money-bill-wave"></i> Ranking por Payout Pendente
+            </h2>
+            <div class="time-filter">
+              <select id="payoutTimeFilter">
+                <option value="24">Últimas 24h</option>
+                <option value="72">Últimas 72h</option>
+                <option value="168" selected>Última semana</option>
+                <option value="720">Últimos 30 dias</option>
+              </select>
+            </div>
+          </div>
+          <div class="ranking-container" id="rankingPayoutContainer">
+            <!-- Ranking de payout será carregado aqui -->
+          </div>
+        </section>
+
+        <!-- Seção: Moderação -->
+        <section id="moderation-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-user-shield"></i> Painel de Moderação</h2>
+            <div class="moderation-tools">
+              <button id="scanSpamBtn" class="btn-action">
+                <i class="fas fa-robot"></i> Verificar Spam
+              </button>
+              <button id="scanPlagiarismBtn" class="btn-action">
+                <i class="fas fa-copy"></i> Verificar Plágio
+              </button>
+              <button id="bulkActionBtn" class="btn-action btn-danger">
+                <i class="fas fa-ban"></i> Ação em Massa
+              </button>
+            </div>
+          </div>
+
+          <div class="moderation-filters">
+            <div class="filter-group">
+              <label
+                ><input type="checkbox" id="filterSpam" checked /> Spam</label
+              >
+              <label
+                ><input type="checkbox" id="filterPlagiarism" checked />
+                Plágio</label
+              >
+              <label
+                ><input type="checkbox" id="filterAbuse" checked /> Abuso</label
+              >
+              <label
+                ><input type="checkbox" id="filterScam" checked /> Scam</label
+              >
+              <label
+                ><input type="checkbox" id="filterNSFW" checked /> NSFW</label
+              >
+            </div>
+            <div class="filter-group">
+              <input
+                type="text"
+                id="modAuthorFilter"
+                placeholder="Filtrar por autor..."
+              />
+              <input
+                type="number"
+                id="minPayoutFilter"
+                placeholder="Payout mínimo"
+                value="10"
+              />
+            </div>
+          </div>
+
+          <div class="moderation-table-container">
+            <table class="moderation-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll" /></th>
+                  <th>Autor</th>
+                  <th>Título</th>
+                  <th>Payout</th>
+                  <th>Risco</th>
+                  <th>Flag</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="moderationTableBody">
+                <!-- Conteúdo da moderação será carregado aqui -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="moderation-stats">
+            <div class="stat-card">
+              <div class="stat-icon high-risk">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Alto Risco</span>
+                <span class="stat-value" id="highRiskCount">0</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon medium-risk">
+                <i class="fas fa-exclamation-circle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Médio Risco</span>
+                <span class="stat-value" id="mediumRiskCount">0</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon low-risk">
+                <i class="fas fa-info-circle"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Baixo Risco</span>
+                <span class="stat-value" id="lowRiskCount">0</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon total-flagged">
+                <i class="fas fa-flag"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Sinalizado</span>
+                <span class="stat-value" id="totalFlaggedCount">0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: Sinalizados -->
+        <section id="flagged-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-flag"></i> Posts Sinalizados</h2>
+            <div class="flag-actions">
+              <button id="clearFlagsBtn" class="btn-action">
                 <i class="fas fa-check-circle"></i> Limpar Flags
-            </button>
-            <button id="exportFlagsBtn" class="btn-action">
+              </button>
+              <button id="exportFlagsBtn" class="btn-action">
                 <i class="fas fa-download"></i> Exportar
-            </button>
-        </div>
-    </div>
+              </button>
+            </div>
+          </div>
 
-    <!-- Paginação no topo -->
-    <div id="flaggedPaginationTop" class="pagination"></div>
-    
-    <!-- Container dos posts sinalizados -->
-    <div class="flagged-container" id="flaggedContainer">
-        <!-- Posts sinalizados serão carregados aqui -->
-    </div>
+          <!-- Paginação no topo -->
+          <div id="flaggedPaginationTop" class="pagination"></div>
 
-    <!-- Container da paginação -->
-    <div id="flaggedPagination" class="pagination">
-        <!-- Botões de página serão criados dinamicamente -->
-    </div>
-</section>
+          <!-- Container dos posts sinalizados -->
+          <div class="flagged-container" id="flaggedContainer">
+            <!-- Posts sinalizados serão carregados aqui -->
+          </div>
 
+          <!-- Container da paginação -->
+          <div id="flaggedPagination" class="pagination">
+            <!-- Botões de página serão criados dinamicamente -->
+          </div>
+        </section>
 
-            <!-- Seção: Busca Avançada -->
-            <section id="search-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-search"></i> Busca Avançada</h2>
-                </div>
-                
-                <div class="advanced-search">
-                    <div class="search-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="searchAuthor">Autor</label>
-                                <input type="text" id="searchAuthor" placeholder="ex: author123">
-                            </div>
-                            <div class="form-group">
-                                <label for="searchTitle">Título</label>
-                                <input type="text" id="searchTitle" placeholder="Palavras no título">
-                            </div>
-                            <div class="form-group">
-                                <label for="searchTags">Tags</label>
-                                <input type="text" id="searchTags" placeholder="hive, blog, crypto">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="searchDateFrom">Data Inicial</label>
-                                <input type="datetime-local" id="searchDateFrom">
-                            </div>
-                            <div class="form-group">
-                                <label for="searchDateTo">Data Final</label>
-                                <input type="datetime-local" id="searchDateTo">
-                            </div>
-                            <div class="form-group">
-                                <label for="searchMinPayout">Payout Mínimo</label>
-                                <input type="number" id="searchMinPayout" placeholder="0" min="0" step="0.001">
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label for="searchContent">Conteúdo (regex permitido)</label>
-                                <input type="text" id="searchContent" placeholder="expressão regular ou texto">
-                            </div>
-                        </div>
-                        
-                        <button id="performAdvancedSearch" class="btn-primary btn-large">
-                            <i class="fas fa-search"></i> Executar Busca
-                        </button>
-                    </div>
-                    
-                    <div class="search-results" id="advancedSearchResults">
-                        <!-- Resultados da busca avançada -->
-                    </div>
-                </div>
-            </section>
+        <!-- Seção: Busca Avançada -->
+        <section id="search-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-search"></i> Busca Avançada</h2>
+          </div>
 
-            <!-- Seção: Estatísticas -->
-            <section id="stats-section" class="content-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-chart-pie"></i> Estatísticas da Rede</h2>
-                    <div class="time-filter">
-                        <select id="statsTimeFilter">
-                            <option value="24">Últimas 24h</option>
-                            <option value="168" selected>Última semana</option>
-                            <option value="720">Últimos 30 dias</option>
-                        </select>
-                    </div>
+          <div class="advanced-search">
+            <div class="search-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="searchAuthor">Autor</label>
+                  <input
+                    type="text"
+                    id="searchAuthor"
+                    placeholder="ex: author123"
+                  />
                 </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-chart">
-                        <h3><i class="fas fa-chart-bar"></i> Posts por Hora</h3>
-                        <canvas id="postsPerHourChart"></canvas>
-                    </div>
-                    <div class="stat-chart">
-                        <h3><i class="fas fa-chart-pie"></i> Qt. de posts per Category</h3>
-                        <canvas id="categoryDistributionChart"></canvas>
-                    </div>
-                    <div class="stat-chart">
-                        <h3><i class="fas fa-users"></i> Top Apps</h3>
-                        <canvas id="topAppChart"></canvas>
-                    </div>
-                    <div class="stat-chart">
-                        <h3><i class="fas fa-tags"></i> Tags Mais Usadas</h3>
-                        <div id="topTagsList"></div>
-                    </div>
+                <div class="form-group">
+                  <label for="searchTitle">Título</label>
+                  <input
+                    type="text"
+                    id="searchTitle"
+                    placeholder="Palavras no título"
+                  />
                 </div>
-                
-                <div class="stats-summary">
-                    <div class="summary-card">
-                        <h4><i class="fas fa-file-alt"></i> Resumo de Posts</h4>
-                        <div class="summary-content">
-                            <p>Total de Posts: <span id="totalPostsCount">0</span></p>
-                            <p>Posts por Autor: <span id="avgPostsPerAuthor">0</span></p>
-                            <p>Payout Médio: <span id="avgPayout">$0.00</span></p>
-                            <p>Taxa de Deleção: <span id="deletionRate">0%</span></p>
-                        </div>
-                    </div>
-                    <div class="summary-card">
-                        <h4><i class="fas fa-exclamation-triangle"></i> Atividade Suspeita</h4>
-                        <div class="summary-content">
-                            <p>Autores com Múltiplos Posts: <span id="multiPostAuthors">0</span></p>
-                            <p>Posts com Payout Alto: <span id="highPayoutPosts">0</span></p>
-                            <p>Conteúdo Similar Detectado: <span id="similarContent">0</span></p>
-                            <p>Taxa de Flag: <span id="flagRate">0%</span></p>
-                        </div>
-                    </div>
-                    <div class="summary-card">
-                        <h4><i class="fas fa-database"></i> Status do Cache</h4>
-                        <div class="summary-content">
-                            <p>Posts em Cache: <span id="cacheStatsCount">0</span></p>
-                            <p>Última Atualização: <span id="cacheLastUpdate">-</span></p>
-                            <p>Tempo de Atualização: <span id="cacheUpdateTime">-</span></p>
-                            <p>Status: <span id="cacheStatus" class="status-good">Ativo</span></p>
-                        </div>
-                    </div>
+                <div class="form-group">
+                  <label for="searchTags">Tags</label>
+                  <input
+                    type="text"
+                    id="searchTags"
+                    placeholder="hive, blog, crypto"
+                  />
                 </div>
-            </section>
-        </main>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="searchDateFrom">Data Inicial</label>
+                  <input type="datetime-local" id="searchDateFrom" />
+                </div>
+                <div class="form-group">
+                  <label for="searchDateTo">Data Final</label>
+                  <input type="datetime-local" id="searchDateTo" />
+                </div>
+                <div class="form-group">
+                  <label for="searchMinPayout">Payout Mínimo</label>
+                  <input
+                    type="number"
+                    id="searchMinPayout"
+                    placeholder="0"
+                    min="0"
+                    step="0.001"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label for="searchContent">Conteúdo (regex permitido)</label>
+                  <input
+                    type="text"
+                    id="searchContent"
+                    placeholder="expressão regular ou texto"
+                  />
+                </div>
+              </div>
+
+              <button id="performAdvancedSearch" class="btn-primary btn-large">
+                <i class="fas fa-search"></i> Executar Busca
+              </button>
+            </div>
+
+            <div class="search-results" id="advancedSearchResults">
+              <!-- Resultados da busca avançada -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: Estatísticas -->
+        <section id="stats-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-chart-pie"></i> Estatísticas da Rede</h2>
+            <div class="time-filter">
+              <select id="statsTimeFilter">
+                <option value="24">Últimas 24h</option>
+                <option value="168" selected>Última semana</option>
+                <option value="720">Últimos 30 dias</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-chart">
+              <h3><i class="fas fa-chart-bar"></i> Posts por Hora</h3>
+              <canvas id="postsPerHourChart"></canvas>
+            </div>
+            <div class="stat-chart">
+              <h3>
+                <i class="fas fa-chart-pie"></i> Qt. de posts per Category
+              </h3>
+              <canvas id="categoryDistributionChart"></canvas>
+            </div>
+            <div class="stat-chart">
+              <h3><i class="fas fa-users"></i> Top Apps</h3>
+              <canvas id="topAppChart"></canvas>
+            </div>
+            <div class="stat-chart">
+              <h3><i class="fas fa-tags"></i> Tags Mais Usadas</h3>
+              <div id="topTagsList"></div>
+            </div>
+          </div>
+
+          <div class="stats-summary">
+            <div class="summary-card">
+              <h4><i class="fas fa-file-alt"></i> Resumo de Posts</h4>
+              <div class="summary-content">
+                <p>Total de Posts: <span id="totalPostsCount">0</span></p>
+                <p>Posts por Autor: <span id="avgPostsPerAuthor">0</span></p>
+                <p>Payout Médio: <span id="avgPayout">$0.00</span></p>
+                <p>Taxa de Deleção: <span id="deletionRate">0%</span></p>
+              </div>
+            </div>
+            <div class="summary-card">
+              <h4>
+                <i class="fas fa-exclamation-triangle"></i> Atividade Suspeita
+              </h4>
+              <div class="summary-content">
+                <p>
+                  Autores com Múltiplos Posts:
+                  <span id="multiPostAuthors">0</span>
+                </p>
+                <p>
+                  Posts com Payout Alto: <span id="highPayoutPosts">0</span>
+                </p>
+                <p>
+                  Conteúdo Similar Detectado: <span id="similarContent">0</span>
+                </p>
+                <p>Taxa de Flag: <span id="flagRate">0%</span></p>
+              </div>
+            </div>
+            <div class="summary-card">
+              <h4><i class="fas fa-database"></i> Status do Cache</h4>
+              <div class="summary-content">
+                <p>Posts em Cache: <span id="cacheStatsCount">0</span></p>
+                <p>Última Atualização: <span id="cacheLastUpdate">-</span></p>
+                <p>Tempo de Atualização: <span id="cacheUpdateTime">-</span></p>
+                <p>
+                  Status:
+                  <span id="cacheStatus" class="status-good">Ativo</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
 
     <!-- Modal de Detalhes do Post -->
     <div id="postDetailModal" class="modal">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h2 id="postDetailTitle">Detalhes do Post</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body" id="postDetailBody">
-                <!-- Conteúdo será preenchido via JavaScript -->
-            </div>
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2 id="postDetailTitle">Detalhes do Post</h2>
+          <button class="close-modal">&times;</button>
         </div>
+        <div class="modal-body" id="postDetailBody">
+          <!-- Conteúdo será preenchido via JavaScript -->
+        </div>
+      </div>
     </div>
 
     <!-- Modal de Configurações -->
     <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-cog"></i> Configurações</h2>
-                <button class="close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-section">
-                    <h3>Preferências de Moderação</h3>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="autoFlagSpam" checked>
-                            Auto-sinalizar spam detectado
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="autoFlagPlagiarism" checked>
-                            Auto-sinalizar plágio
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            <input type="checkbox" id="notifyHighPayout" checked>
-                            Notificar pagamentos altos
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            Limite de payout para alerta:
-                            <input type="number" id="payoutAlertThreshold" value="100" min="0" step="10">
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="settings-section">
-                    <h3>Configurações da Interface</h3>
-                    <div class="setting-item">
-                        <label>
-                            Tema:
-                            <select id="themeSelect">
-                                <option value="light">Claro</option>
-                                <option value="dark">Escuro</option>
-                                <option value="auto">Automático</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="setting-item">
-                        <label>
-                            Posts por página:
-                            <select id="postsPerPageSetting">
-                                <option value="10">10</option>
-                                <option value="25" selected>25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-                
-                <button id="saveSettings" class="btn-primary">Salvar Configurações</button>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-cog"></i> Configurações</h2>
+          <button class="close-modal">&times;</button>
         </div>
+        <div class="modal-body">
+          <div class="settings-section">
+            <h3>Preferências de Moderação</h3>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="autoFlagSpam" checked />
+                Auto-sinalizar spam detectado
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="autoFlagPlagiarism" checked />
+                Auto-sinalizar plágio
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="notifyHighPayout" checked />
+                Notificar pagamentos altos
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                Limite de payout para alerta:
+                <input
+                  type="number"
+                  id="payoutAlertThreshold"
+                  value="100"
+                  min="0"
+                  step="10"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Configurações da Interface</h3>
+            <div class="setting-item">
+              <label>
+                Tema:
+                <select id="themeSelect">
+                  <option value="light">Claro</option>
+                  <option value="dark">Escuro</option>
+                  <option value="auto">Automático</option>
+                </select>
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                Posts por página:
+                <select id="postsPerPageSetting">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <button id="saveSettings" class="btn-primary">
+            Salvar Configurações
+          </button>
+        </div>
+      </div>
     </div>
 
     <div id="mutedUsersModal" class="modal hidden">
-  <div class="modal-content" style="max-width: 500px;">
-    <div class="modal-header">
-      <h3><i class="fas fa-user-slash"></i> Usuários Mutados</h3>
-      <span class="close-modal">&times;</span>
-    </div>
-    <div class="modal-body">
-      <p>Usuários mutados não aparecerão na lista de posts recentes.</p>
-      <div id="mutedUsersList" class="muted-users-list">
-        <!-- Lista de usuários mutados será carregada aqui -->
+      <div class="modal-content" style="max-width: 500px">
+        <div class="modal-header">
+          <h3><i class="fas fa-user-slash"></i> Usuários Mutados</h3>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <p>Usuários mutados não aparecerão na lista de posts recentes.</p>
+          <div id="mutedUsersList" class="muted-users-list">
+            <!-- Lista de usuários mutados será carregada aqui -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary" onclick="closeModal('mutedUsersModal')">
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-primary" onclick="closeModal('mutedUsersModal')">Fechar</button>
-    </div>
-  </div>
-</div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
-    <script src="app.js"></script>
-</body>
+    <script type="module" src="src/app.js"></script>
+  </body>
 </html>

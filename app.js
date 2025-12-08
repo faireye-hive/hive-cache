@@ -1,5 +1,4 @@
 // Configuração
-const API_BASE_URL = "http://localhost:4000";
 let currentUser = null;
 let allPosts = [];
 let filteredPosts = [];
@@ -9,7 +8,6 @@ let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
 
 let flaggedCurrentPage = 1;
 const flaggedPostsPerPage = 25;
-
 
 // Carregar configurações do localStorage
 let moderationSettings = {
@@ -23,7 +21,9 @@ let moderationSettings = {
 };
 
 function loadSettings() {
-  const savedSettings = JSON.parse(localStorage.getItem("moderationSettings") || "{}");
+  const savedSettings = JSON.parse(
+    localStorage.getItem("moderationSettings") || "{}"
+  );
 
   moderationSettings = {
     autoFlagSpam: true,
@@ -45,7 +45,10 @@ function loadSettings() {
 }
 // Função para salvar usuários mutados
 function saveMutedUsers() {
-  localStorage.setItem("mutedUsers", JSON.stringify(moderationSettings.mutedUsers));
+  localStorage.setItem(
+    "mutedUsers",
+    JSON.stringify(moderationSettings.mutedUsers)
+  );
 }
 
 // Função para mutar um usuário
@@ -71,15 +74,17 @@ function unmuteUser(username) {
 
 // Função para verificar se um usuário está mutado
 function isUserMuted(username) {
-  return Array.isArray(moderationSettings.mutedUsers) &&
-         moderationSettings.mutedUsers.includes(username);
+  return (
+    Array.isArray(moderationSettings.mutedUsers) &&
+    moderationSettings.mutedUsers.includes(username)
+  );
 }
 
 // Atualizar exibição de posts com filtro de usuários mutados
 function refreshPostsDisplay() {
   // Filtrar posts removendo os de usuários mutados
-  const postsToShow = filteredPosts.filter(post => !isUserMuted(post.author));
-  
+  const postsToShow = filteredPosts.filter((post) => !isUserMuted(post.author));
+
   const container = document.getElementById("postsContainer");
   const pageInfo = document.getElementById("pageInfo");
 
@@ -109,10 +114,13 @@ function refreshPostsDisplay() {
 
 // Salvar configurações no localStorage
 function saveSettings() {
-  localStorage.setItem("moderationSettings", JSON.stringify({
-    ...moderationSettings,
-    mutedUsers: moderationSettings.mutedUsers, // garante que mutedUsers seja salvo junto
-  }));
+  localStorage.setItem(
+    "moderationSettings",
+    JSON.stringify({
+      ...moderationSettings,
+      mutedUsers: moderationSettings.mutedUsers, // garante que mutedUsers seja salvo junto
+    })
+  );
   showNotification("Configurações salvas com sucesso!", "success");
   applySettings();
 }
@@ -425,7 +433,6 @@ function openSettingsModal() {
   modal.classList.remove("hidden");
 }
 
-
 // Função para fechar modais
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -445,7 +452,9 @@ function initEventListeners() {
     .getElementById("clearCacheBtn")
     .addEventListener("click", clearCache);
 
-    document.getElementById('mutedUsersBtn').addEventListener('click', openMutedUsersManager);
+  document
+    .getElementById("mutedUsersBtn")
+    .addEventListener("click", openMutedUsersManager);
 
   // Paginação
   document.getElementById("prevPage").addEventListener("click", () => {
@@ -525,24 +534,26 @@ async function loadPosts() {
     // 1. LER COMO TEXTO (necessário para NDJSON)
     const text = await response.text();
 
-    const cleanedText = text.replace(/\\\\/g, '\\');
-    
+    const cleanedText = text.replace(/\\\\/g, "\\");
+
     // 2. PROCESSAR O TEXTO LINHA POR LINHA
-    const lines = cleanedText.split('\n').filter(line => line.trim() !== ''); // Divide em linhas e remove vazias
-    
-    const data = lines.map((line, index) => {
+    const lines = cleanedText.split("\n").filter((line) => line.trim() !== ""); // Divide em linhas e remove vazias
+
+    const data = lines
+      .map((line, index) => {
         try {
-            // Tenta fazer o parsing de cada linha, que é um objeto JSON completo
-            return JSON.parse(line);
+          // Tenta fazer o parsing de cada linha, que é um objeto JSON completo
+          return JSON.parse(line);
         } catch (e) {
-            console.error(`Erro no parsing da linha ${index + 1}:`, line, e);
-            // Se houver erro de parsing em uma linha, retornamos null
-            return null; 
+          console.error(`Erro no parsing da linha ${index + 1}:`, line, e);
+          // Se houver erro de parsing em uma linha, retornamos null
+          return null;
         }
-    }).filter(item => item !== null); // Remove qualquer linha que tenha falhado no parsing
+      })
+      .filter((item) => item !== null); // Remove qualquer linha que tenha falhado no parsing
 
     // O 'data' agora é um Array JavaScript válido, contendo todos os objetos
-    
+
     console.log(`Posts carregados via NDJSON: ${data.length}`);
 
     if (data.length > 0) {
@@ -552,11 +563,10 @@ async function loadPosts() {
       updateSystemStatus();
 
       // Atualizar contagem no cache
-        document.getElementById("cacheCount").textContent = allPosts.length;
+      document.getElementById("cacheCount").textContent = allPosts.length;
 
-        document.getElementById("lastUpdate").textContent = "Agora";
+      document.getElementById("lastUpdate").textContent = "Agora";
     }
-    
   } catch (error) {
     console.error("Erro ao carregar posts:", error);
     // Note que o 'error' pode ser um erro de rede ou um erro de parsing (se o arquivo estiver muito quebrado)
@@ -592,7 +602,7 @@ function countApps(posts) {
   const appCounts = {};
   const userAppMap = {};
 
-  posts.forEach(post => {
+  posts.forEach((post) => {
     const user = post.author;
     let app = post.json_metadata?.app || "Desconhecido";
 
@@ -617,8 +627,6 @@ function countApps(posts) {
   return appCounts;
 }
 
-
-
 function saveAppCounts(appCounts) {
   sessionStorage.setItem("appCounts", JSON.stringify(appCounts));
 }
@@ -626,7 +634,6 @@ function saveAppCounts(appCounts) {
 function loadAppCounts() {
   return JSON.parse(sessionStorage.getItem("appCounts") || "{}");
 }
-
 
 // Criar card de post
 function createPostCard(post) {
@@ -700,43 +707,35 @@ function createPostCard(post) {
   if (flagBtn) flagBtn.addEventListener("click", () => toggleFlagPost(post.id));
   if (modBtn) modBtn.addEventListener("click", () => openModerationPanel(post));
 
-
   const muteBtn = document.createElement("button");
   const isMuted = isUserMuted(post.author);
-  muteBtn.className = `btn-icon mute-user-btn ${isMuted ? 'muted' : ''}`;
+  muteBtn.className = `btn-icon mute-user-btn ${isMuted ? "muted" : ""}`;
   muteBtn.title = isMuted ? "Desmutar usuário" : "Mutuar usuário";
   muteBtn.innerHTML = `<i class="fas fa-volume-mute"></i>`;
 
-    muteBtn.addEventListener("click", (e) => {
+  muteBtn.addEventListener("click", (e) => {
     e.stopPropagation(); // Evitar que abra o modal de detalhes
     if (isUserMuted(post.author)) {
       unmuteUser(post.author);
-      muteBtn.classList.remove('muted');
+      muteBtn.classList.remove("muted");
       muteBtn.title = "Mutuar usuário";
       muteBtn.innerHTML = `<i class="fas fa-volume-mute"></i>`;
     } else {
       muteUser(post.author);
-      muteBtn.classList.add('muted');
+      muteBtn.classList.add("muted");
       muteBtn.title = "Desmutar usuário";
       muteBtn.innerHTML = `<i class="fas fa-volume-up"></i>`;
     }
   });
 
-    // Adicionar ao container de ações
-  const actionsContainer = div.querySelector('.post-actions');
+  // Adicionar ao container de ações
+  const actionsContainer = div.querySelector(".post-actions");
   if (actionsContainer) {
     actionsContainer.appendChild(muteBtn);
   }
 
-  //console.log(viewBtn);
-  // Adicionar event listeners aos botões
-  //div.querySelector('.view-post').addEventListener('click', () => showPostDetail(post));
-  //div.querySelector('.flag-post').addEventListener('click', () => toggleFlagPost(post.id));
-  //div.querySelector('.moderate-post').addEventListener('click', () => openModerationPanel(post));
-
   return div;
 }
-
 
 // Adicione esta função para abrir o gerenciador de usuários mutados
 function openMutedUsersManager() {
@@ -746,12 +745,13 @@ function openMutedUsersManager() {
   if (!modal || !container) return;
 
   // Limpar lista
-  container.innerHTML = '';
+  container.innerHTML = "";
 
   if (moderationSettings?.mutedUsers?.length === 0) {
-    container.innerHTML = '<div class="no-muted-users">Nenhum usuário mutado</div>';
+    container.innerHTML =
+      '<div class="no-muted-users">Nenhum usuário mutado</div>';
   } else {
-    moderationSettings.mutedUsers.forEach(username => {
+    moderationSettings.mutedUsers.forEach((username) => {
       const userElement = document.createElement("div");
       userElement.className = "muted-user-item";
       userElement.innerHTML = `
@@ -764,16 +764,16 @@ function openMutedUsersManager() {
     });
 
     // Eventos de desmutar
-    container.querySelectorAll('.unmute-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const username = this.getAttribute('data-username');
+    container.querySelectorAll(".unmute-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const username = this.getAttribute("data-username");
         unmuteUser(username);
         openMutedUsersManager(); // recarrega a lista
       });
     });
   }
 
-  modal.classList.remove('hidden');
+  modal.classList.remove("hidden");
 }
 
 function normalizeTags(tags) {
@@ -1137,7 +1137,6 @@ function renderFlaggedPagination(paginationContainer, totalPages) {
   paginationContainer.appendChild(nextBtn);
 }
 
-
 // Posts sinalizados
 function loadFlaggedPosts() {
   const container = document.getElementById("flaggedContainer");
@@ -1156,7 +1155,7 @@ function loadFlaggedPosts() {
 
   // Contagem de todos os posts por autor e soma do pending payout
   const authorStats = {};
-  allPosts.forEach(post => {
+  allPosts.forEach((post) => {
     const author = post.author.trim();
     if (!authorStats[author]) {
       authorStats[author] = { postCount: 0, totalPayout: 0 };
@@ -1168,14 +1167,14 @@ function loadFlaggedPosts() {
   });
 
   // Filtrar apenas posts sinalizados
-  const flaggedPostsList = allPosts.filter(post =>
+  const flaggedPostsList = allPosts.filter((post) =>
     flaggedPostIds.includes(post.id.toString())
   );
 
   // Pegar apenas 1 post por autor
   const seenAuthors = new Set();
   const uniqueAuthorPosts = [];
-  flaggedPostsList.forEach(post => {
+  flaggedPostsList.forEach((post) => {
     const author = post.author.trim();
     if (!seenAuthors.has(author)) {
       seenAuthors.add(author);
@@ -1190,18 +1189,18 @@ function loadFlaggedPosts() {
   const endIndex = startIndex + flaggedPostsPerPage;
   const pagePosts = uniqueAuthorPosts.slice(startIndex, endIndex);
 
-  pagePosts.forEach(post => {
+  pagePosts.forEach((post) => {
     const flagInfo = flaggedPosts[post.id];
     const postElement = createPostCard(post);
 
     const author = post.author.trim();
     const stats = authorStats[author] || { postCount: 1, totalPayout: 0 };
 
-      // Atualizar o payout do card para o total do autor
-  const payoutElem = postElement.querySelector(".post-payout");
-  if (payoutElem) {
-    payoutElem.textContent = `T: ${stats.totalPayout.toFixed(3)}`;
-  }
+    // Atualizar o payout do card para o total do autor
+    const payoutElem = postElement.querySelector(".post-payout");
+    if (payoutElem) {
+      payoutElem.textContent = `T: ${stats.totalPayout.toFixed(3)}`;
+    }
 
     const flagDetails = document.createElement("div");
     flagDetails.className = "flag-details";
@@ -1218,11 +1217,13 @@ function loadFlaggedPosts() {
       </button>
     `;
 
-    flagDetails.querySelector(".clear-flag-btn").addEventListener("click", () => {
-      toggleFlagPost(post.id);
-      loadFlaggedPosts();
-      updateFlaggedCount();
-    });
+    flagDetails
+      .querySelector(".clear-flag-btn")
+      .addEventListener("click", () => {
+        toggleFlagPost(post.id);
+        loadFlaggedPosts();
+        updateFlaggedCount();
+      });
 
     postElement.appendChild(flagDetails);
     container.appendChild(postElement);
@@ -1258,8 +1259,6 @@ function loadFlaggedPosts() {
   renderPagination(paginationTop);
   renderPagination(paginationBottom);
 }
-
-
 
 // Busca avançada
 function performAdvancedSearch() {
@@ -1493,54 +1492,61 @@ function createCharts() {
       });
     }
 
-// Gráfico de Top Apps
-const ctx3 = document.getElementById("topAppChart");
-if (ctx3) {
-  const appCounts = countApps(allPosts); // função que já criamos
-  const sortedApps = Object.entries(appCounts)
-    .sort((a,b) => b[1]-a[1])
-    .slice(0, 10); // top 10 apps
+    // Gráfico de Top Apps
+    const ctx3 = document.getElementById("topAppChart");
+    if (ctx3) {
+      const appCounts = countApps(allPosts); // função que já criamos
+      const sortedApps = Object.entries(appCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // top 10 apps
 
-  new Chart(ctx3, {
-    type: "doughnut",
-    data: {
-      labels: sortedApps.map(a => a[0]),
-      datasets: [{
-        data: sortedApps.map(a => a[1]),
-        backgroundColor: [
-          "#FF6384","#36A2EB","#FFCE56","#4BC0C0","#9966FF",
-          "#FF9F40","#FF6384","#C9CBCF","#8AC926","#FF595E"
-        ],
-        borderColor: "#ffffff",
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "right",
-          labels: {
-            boxWidth: 20,
-            padding: 15
-          }
+      new Chart(ctx3, {
+        type: "doughnut",
+        data: {
+          labels: sortedApps.map((a) => a[0]),
+          datasets: [
+            {
+              data: sortedApps.map((a) => a[1]),
+              backgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+                "#FF9F40",
+                "#FF6384",
+                "#C9CBCF",
+                "#8AC926",
+                "#FF595E",
+              ],
+              borderColor: "#ffffff",
+              borderWidth: 2,
+            },
+          ],
         },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              const label = context.label || '';
-              const value = context.raw || 0;
-              return `${label}: ${value} Users`;
-            }
-          }
-        }
-      }
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                boxWidth: 20,
+                padding: 15,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const label = context.label || "";
+                  const value = context.raw || 0;
+                  return `${label}: ${value} Users`;
+                },
+              },
+            },
+          },
+        },
+      });
     }
-  });
-}
-
-
-    
   } catch (error) {
     console.warn("Erro ao criar gráficos:", error);
   }
@@ -1591,7 +1597,8 @@ function updateStatsSummary() {
 function calculateRiskLevel(post) {
   let riskScore = 0;
 
-  const commandRegex = /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt|summarize)\b/i;
+  const commandRegex =
+    /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt|summarize)\b/i;
 
   if (commandRegex.test(post.body || "")) {
     riskScore += 2;
@@ -1761,97 +1768,15 @@ function updateFlaggedCount() {
   document.getElementById("flaggedCount").textContent = count;
 }
 
-// Funções para moderação avançada
-/*
-function scanForSpam() {
-  showNotification("Verificando spam...", "info");
-
-  // Simulação de verificação de spam
-  setTimeout(() => {
-    const potentialSpam = allPosts.filter((post) => {
-      const body = (escapeHTML(post.body) || "").toLowerCase();
-      const title = (escapeHTML(post.title) || "").toLowerCase();
-
-      // Critérios para spam
-      const spamPatterns = [
-        "make money fast",
-        "get rich quick",
-        "click here",
-        "buy now",
-        "limited offer",
-        "guaranteed profit",
-        "work from home",
-        "earn $1000 daily",
-      ];
-
-      return (
-        spamPatterns.some(
-          (pattern) => body.includes(pattern) || title.includes(pattern)
-        ) || (escapeHTML(post.body) || "").length < 50
-      );
-    });
-
-    if (potentialSpam.length > 0) {
-      const count = potentialSpam.length;
-      showNotification(
-        `Encontrados ${count} posts suspeitos de spam`,
-        "warning"
-      );
-
-      // Usar configuração de auto-flag
-      if (moderationSettings.autoFlagSpam) {
-        potentialSpam.forEach((post) => {
-          if (!flaggedPosts[post.id]) {
-            flaggedPosts[post.id] = {
-              timestamp: new Date().toISOString(),
-              flaggedBy: currentUser?.username || "spam-scanner",
-              reason: "Potencial spam",
-            };
-          }
-        });
-        localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
-        updateFlaggedCount();
-        loadModerationPanel();
-        updatePostsDisplay();
-        showNotification(
-          `${count} posts sinalizados automaticamente como spam`,
-          "info"
-        );
-      } else {
-        // Perguntar se quer sinalizar
-        if (confirm(`Deseja sinalizar ${count} posts como spam?`)) {
-          potentialSpam.forEach((post) => {
-            if (!flaggedPosts[post.id]) {
-              flaggedPosts[post.id] = {
-                timestamp: new Date().toISOString(),
-                flaggedBy: currentUser?.username || "spam-scanner",
-                reason: "Potencial spam",
-              };
-            }
-          });
-          localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
-          updateFlaggedCount();
-          loadModerationPanel();
-          updatePostsDisplay();
-        }
-      }
-    } else {
-      showNotification("Nenhum spam detectado", "success");
-    }
-  }, 2000);
-}
-  */
-
 function scanForSpam() {
   showNotification("Verificando spam...", "info");
 
   setTimeout(() => {
-
     // --- 1. Agrupar posts por autor ---
     const postsByAuthor = {};
     const shortPostsByAuthor = {};
 
-    allPosts.forEach(post => {
+    allPosts.forEach((post) => {
       const author = post.author || "unknown";
 
       if (!postsByAuthor[author]) postsByAuthor[author] = 0;
@@ -1859,7 +1784,7 @@ function scanForSpam() {
 
       postsByAuthor[author]++;
 
-      const cleanBody = (escapeHTML(post.body) || "");
+      const cleanBody = escapeHTML(post.body) || "";
       if (cleanBody.length < 15) {
         shortPostsByAuthor[author]++;
       }
@@ -1897,11 +1822,7 @@ function scanForSpam() {
       // 2. Autor com 20+ posts muito curtos
       const authorPostsManyShorts = shortPostsByAuthor[author] > 20;
 
-      return (
-        hasSpamPatterns ||
-        authorHasTooManyPosts ||
-        authorPostsManyShorts
-      );
+      return hasSpamPatterns || authorHasTooManyPosts || authorPostsManyShorts;
     });
 
     // --- 3. RESULTADO ---
@@ -1928,8 +1849,10 @@ function scanForSpam() {
         updateFlaggedCount();
         loadModerationPanel();
         updatePostsDisplay();
-        showNotification(`${count} posts sinalizados automaticamente como spam`, "info");
-
+        showNotification(
+          `${count} posts sinalizados automaticamente como spam`,
+          "info"
+        );
       } else {
         // Confirmar manualmente
         if (confirm(`Deseja sinalizar ${count} posts como spam?`)) {
@@ -1949,90 +1872,126 @@ function scanForSpam() {
           updatePostsDisplay();
         }
       }
-
     } else {
       showNotification("Nenhum spam detectado", "success");
     }
-
   }, 2000);
 }
 
-
 // Plagio funções que ajudam
 
-    // Detecta palavras estranhas proibidas, sinais de golpe, menções a dinheiro/transferência, pedidos de contato externo.
+// Detecta palavras estranhas proibidas, sinais de golpe, menções a dinheiro/transferência, pedidos de contato externo.
 function keywordDetector(post, keywords = [], minMatches = 1) {
   const text = (post.title + " " + post.body).toLowerCase();
   let matches = [];
-  keywords.forEach(k => {
+  keywords.forEach((k) => {
     if (text.includes(k.toLowerCase())) matches.push(k);
   });
   const score = Math.min(1, matches.length / Math.max(1, minMatches));
-  return { score, reason: matches.length ? `keywords:${matches.join(",")}` : null, matches };
+  return {
+    score,
+    reason: matches.length ? `keywords:${matches.join(",")}` : null,
+    matches,
+  };
 }
 
-  //Detecta muitos links, rediretores, domínios conhecidos por spam, urls curtas (bit.ly), links para fora com parâmetros longos.
-function linkDetector(post, maxLinks = 2, blacklistDomains = ['bit.ly','tinyurl.com','spamdomain.com']) {
+//Detecta muitos links, rediretores, domínios conhecidos por spam, urls curtas (bit.ly), links para fora com parâmetros longos.
+function linkDetector(
+  post,
+  maxLinks = 2,
+  blacklistDomains = ["bit.ly", "tinyurl.com", "spamdomain.com"]
+) {
   const urlRegex = /https?:\/\/[^\s]+/g;
-  const text = (post.title + " " + post.body) || "";
+  const text = post.title + " " + post.body || "";
   const urls = text.match(urlRegex) || [];
-  const domains = urls.map(u => {
-    try { return (new URL(u)).hostname.replace(/^www\./,''); } catch { return null; }
-  }).filter(Boolean);
-  const blacklisted = domains.filter(d => blacklistDomains.includes(d));
-  const score = Math.min(1, (urls.length > maxLinks ? 1 : urls.length / maxLinks) + (blacklisted.length ? 0.7 : 0));
+  const domains = urls
+    .map((u) => {
+      try {
+        return new URL(u).hostname.replace(/^www\./, "");
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+  const blacklisted = domains.filter((d) => blacklistDomains.includes(d));
+  const score = Math.min(
+    1,
+    (urls.length > maxLinks ? 1 : urls.length / maxLinks) +
+      (blacklisted.length ? 0.7 : 0)
+  );
   return { score, reason: `links:${urls.length}`, urls, blacklisted };
 }
-  //AI detect
-  const STOPWORDS = new Set(['the','and','a','to','of','in','is','that','it','on','for' /*...*/]);
+//AI detect
+const STOPWORDS = new Set([
+  "the",
+  "and",
+  "a",
+  "to",
+  "of",
+  "in",
+  "is",
+  "that",
+  "it",
+  "on",
+  "for" /*...*/,
+]);
 
-  function aiHeuristicDetector(post) {
-    const text = (post.title + " " + post.body || '').toLowerCase();
-    const words = text.match(/\b[\w']+\b/g) || [];
-    if (words.length < 30) return { score: 0, reason: null }; // muito curto pra avaliar
-    // taxa de stopwords
-    const stopCount = words.filter(w => STOPWORDS.has(w)).length;
-    const stopRatio = stopCount / words.length;
-    // repetição de n-gramos
-    const ngrams = {};
-    for (let i=0;i<words.length-2;i++){
-      const ng = words.slice(i,i+3).join(' ');
-      ngrams[ng] = (ngrams[ng]||0)+1;
-    }
-    const repeatNgrams = Object.values(ngrams).filter(v=>v>1).length;
-    // heurística combinada
-    let score = 0;
-    if (stopRatio > 0.5) score += 0.1;
-    if (repeatNgrams > Math.max(1, words.length/100)) score += 0.4;
-    // penaliza se muitas transições formais
-    const transitions = ['however','moreover','furthermore','therefore','consequently'];
-    const transCount = words.filter(w=>transitions.includes(w)).length;
-    if (transCount > Math.max(1, words.length/200)) score += 0.2;
-
-    return { score: Math.min(1, score), reason: `aiHeuristics stopRatio:${stopRatio.toFixed(2)} repeats:${repeatNgrams}` };
+function aiHeuristicDetector(post) {
+  const text = (post.title + " " + post.body || "").toLowerCase();
+  const words = text.match(/\b[\w']+\b/g) || [];
+  if (words.length < 30) return { score: 0, reason: null }; // muito curto pra avaliar
+  // taxa de stopwords
+  const stopCount = words.filter((w) => STOPWORDS.has(w)).length;
+  const stopRatio = stopCount / words.length;
+  // repetição de n-gramos
+  const ngrams = {};
+  for (let i = 0; i < words.length - 2; i++) {
+    const ng = words.slice(i, i + 3).join(" ");
+    ngrams[ng] = (ngrams[ng] || 0) + 1;
   }
+  const repeatNgrams = Object.values(ngrams).filter((v) => v > 1).length;
+  // heurística combinada
+  let score = 0;
+  if (stopRatio > 0.5) score += 0.1;
+  if (repeatNgrams > Math.max(1, words.length / 100)) score += 0.4;
+  // penaliza se muitas transições formais
+  const transitions = [
+    "however",
+    "moreover",
+    "furthermore",
+    "therefore",
+    "consequently",
+  ];
+  const transCount = words.filter((w) => transitions.includes(w)).length;
+  if (transCount > Math.max(1, words.length / 200)) score += 0.2;
+
+  return {
+    score: Math.min(1, score),
+    reason: `aiHeuristics stopRatio:${stopRatio.toFixed(2)} repeats:${repeatNgrams}`,
+  };
+}
 
 async function scanPostAdvanced(post) {
   const detectors = [
-    keywordDetector(post, ['transfer','whatsapp','contact','buy now']),
+    keywordDetector(post, ["transfer", "whatsapp", "contact", "buy now"]),
     linkDetector(post),
-    aiHeuristicDetector(post)
+    aiHeuristicDetector(post),
   ];
 
   // soma ponderada
   const weights = [0.6, 0.5, 0.6, 0.7, 0.8, 0.6];
-  let total = 0, max = 0;
+  let total = 0,
+    max = 0;
   const reasons = [];
-  detectors.forEach((d,i) => {
+  detectors.forEach((d, i) => {
     const s = d.score || 0;
     total += s * weights[i];
     max += weights[i];
     if (d.reason) reasons.push(d.reason);
   });
   const finalScore = total / max; // 0..1
-  return {score: finalScore, reasons};
+  return { score: finalScore, reasons };
 }
-
 
 function scanForPlagiarism() {
   showNotification("Verificando plágio...", "info");
@@ -2123,36 +2082,14 @@ function selectAllPosts() {
 }
 
 // Funções para interagir com a API
-async function showCacheStats() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/cache/active/stats`);
-    if (!response.ok) throw new Error("Erro na resposta");
-
-    const stats = await response.json();
-
-    alert(`
-Estatísticas do Cache:
-• Posts em cache: ${stats.activeCache?.totalPosts || 0}
-• Última atualização: ${stats.activeCache?.lastUpdate || "N/A"}
-• Data do último post: ${stats.activeCache?.lastPostDate || "N/A"}
-• Uso de memória: ${stats.activeCache?.memoryUsage || "N/A"}
-• Status Redis: ${stats.redis?.connected ? "✅ Conectado" : "❌ Desconectado"}
-        `);
-  } catch (error) {
-    showNotification("Erro ao buscar estatísticas do cache", "error");
-  }
-}
+async function showCacheStats() {}
 
 async function clearCache() {
-  return new Promise(resolve => {
-    const keys = [
-      'flaggedPosts',
-      'mutedUsers',
-      'moderationSettings'
-    ];
+  return new Promise((resolve) => {
+    const keys = ["flaggedPosts", "mutedUsers", "moderationSettings"];
 
     // Limpa localStorage
-    keys.forEach(k => localStorage.removeItem(k));
+    keys.forEach((k) => localStorage.removeItem(k));
 
     // Resetar o objeto em memória
     moderationSettings = {
@@ -2176,8 +2113,6 @@ async function clearCache() {
     resolve(true);
   });
 }
-
-
 
 // Mostrar detalhes do post
 function showPostDetail(post) {
@@ -2298,216 +2233,3 @@ function deletePost(postId) {
   showNotification("Funcionalidade de deleção seria implementada aqui", "info");
   // Em produção: enviar para API marcar como deletado
 }
-
-// Adicionar CSS para notificações e estilos extras
-const additionalStyles = document.createElement("style");
-additionalStyles.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-    
-    .no-posts, .no-results {
-        text-align: center;
-        padding: 3rem;
-        color: #666;
-        font-size: 1.2rem;
-        grid-column: 1 / -1;
-    }
-    
-    .post-detail-header {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    .post-detail-content .content-box {
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 5px;
-        margin: 1rem 0;
-        white-space: pre-wrap;
-        font-family: monospace;
-    }
-    
-    .post-detail-actions {
-        display: flex;
-        gap: 1rem;
-        margin: 2rem 0;
-        flex-wrap: wrap;
-    }
-    
-    .post-detail-metadata pre {
-        max-height: 200px;
-        overflow-y: auto;
-        background: #2c3e50;
-        color: white;
-        padding: 1rem;
-        border-radius: 5px;
-        font-size: 0.9rem;
-    }
-    
-    .ranking-rank.first {
-        background: #FFD700;
-        color: #000;
-    }
-    
-    .ranking-rank.second {
-        background: #C0C0C0;
-        color: #000;
-    }
-    
-    .ranking-rank.third {
-        background: #CD7F32;
-        color: #000;
-    }
-    
-    .text-danger {
-        color: #e74c3c;
-    }
-    
-    .error-message {
-        text-align: center;
-        padding: 3rem;
-        color: #e74c3c;
-        background: #ffeaea;
-        border-radius: 10px;
-        margin: 2rem 0;
-    }
-    
-    .error-message i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-    
-    .flag-details {
-        padding: 1rem;
-        background: #fff3cd;
-        border-top: 1px solid #ffeaa7;
-        border-radius: 0 0 10px 10px;
-    }
-    
-    .search-result-item {
-        background: white;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .search-result-item h5 {
-        color: #2c3e50;
-        margin-bottom: 0.5rem;
-    }
-    
-    .search-result-item .excerpt {
-        color: #666;
-        font-size: 0.9rem;
-        margin: 0.5rem 0;
-    }
-    
-    .search-summary {
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #3498db;
-    }
-    
-    /* Estilos para temas */
-    .theme-dark {
-        --primary-color: #3498db;
-        --secondary-color: #2c3e50;
-        --background-color: #1a1a1a;
-        --text-color: #ffffff;
-        --card-background: #2d2d2d;
-        --border-color: #404040;
-        --light-color: #2d2d2d;
-        --danger-color: #e74c3c;
-        --success-color: #27ae60;
-        --warning-color: #f39c12;
-        --info-color: #1abc9c;
-    }
-    
-    .theme-dark body {
-        background-color: var(--background-color);
-        color: var(--text-color);
-    }
-    
-    .theme-dark .post-card,
-    .theme-dark .ranking-container,
-    .theme-dark .moderation-table-container,
-    .theme-dark .stat-chart,
-    .theme-dark .summary-card,
-    .theme-dark .search-form,
-    .theme-dark .search-result-item,
-    .theme-dark .modal-content,
-    .theme-dark .sidebar,
-    .theme-dark .toolbar {
-        background-color: var(--card-background);
-        color: var(--text-color);
-        border-color: var(--border-color);
-    }
-    
-    .theme-dark .modal-content {
-        background-color: var(--card-background);
-        color: var(--text-color);
-    }
-    
-    .theme-dark .modal-content .form-input,
-    .theme-dark .modal-content select,
-    .theme-dark .modal-content input[type="number"] {
-        background-color: #3d3d3d;
-        color: var(--text-color);
-        border-color: var(--border-color);
-    }
-    
-    .theme-dark .setting-item {
-        background-color: #3d3d3d;
-    }
-    
-    .theme-dark .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    
-    .theme-dark .post-detail-content .content-box {
-        background-color: #3d3d3d;
-        color: var(--text-color);
-    }
-    
-    .theme-dark .post-detail-metadata pre {
-        background-color: #2c3e50;
-        color: white;
-    }
-    
-    .theme-dark .navbar {
-        background-color: var(--secondary-color);
-    }
-    
-    .theme-dark .post-card-header {
-        background-color: var(--primary-color);
-    }
-    
-    .theme-dark .sidebar-section h3,
-    .theme-dark .section-header h2,
-    .theme-dark .search-summary h4 {
-        color: var(--text-color);
-    }
-    
-    .theme-dark .status-label,
-    .theme-dark .post-excerpt,
-    .theme-dark .ranking-stat {
-        color: #cccccc;
-    }
-`;
-document.head.appendChild(additionalStyles);
