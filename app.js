@@ -7,6 +7,10 @@ let currentPage = 1;
 let postsPerPage = 25;
 let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
 
+let flaggedCurrentPage = 1;
+const flaggedPostsPerPage = 25;
+
+
 // Carregar configurações do localStorage
 let moderationSettings = {
   autoFlagSpam: true,
@@ -1103,47 +1107,159 @@ function toggleFlagPost(postId, refresh = false) {
   }
 }
 
+// Função para renderizar paginação
+function renderFlaggedPagination(paginationContainer, totalPages) {
+  if (!paginationContainer || totalPages <= 1) return;
+
+  paginationContainer.innerHTML = "";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.textContent = "Anterior";
+  prevBtn.disabled = flaggedCurrentPage === 1;
+  prevBtn.addEventListener("click", () => {
+    flaggedCurrentPage--;
+    loadFlaggedPosts();
+  });
+
+  const nextBtn = document.createElement("button");
+  nextBtn.textContent = "Próxima";
+  nextBtn.disabled = flaggedCurrentPage === totalPages;
+  nextBtn.addEventListener("click", () => {
+    flaggedCurrentPage++;
+    loadFlaggedPosts();
+  });
+
+  const pageInfo = document.createElement("span");
+  pageInfo.textContent = `Página ${flaggedCurrentPage} de ${totalPages}`;
+
+  paginationContainer.appendChild(prevBtn);
+  paginationContainer.appendChild(pageInfo);
+  paginationContainer.appendChild(nextBtn);
+}
+
+
 // Posts sinalizados
 function loadFlaggedPosts() {
   const container = document.getElementById("flaggedContainer");
+  const paginationTop = document.getElementById("flaggedPaginationTop");
+  const paginationBottom = document.getElementById("flaggedPagination");
+
   container.innerHTML = "";
+  if (paginationTop) paginationTop.innerHTML = "";
+  if (paginationBottom) paginationBottom.innerHTML = "";
 
   const flaggedPostIds = Object.keys(flaggedPosts);
-  const flaggedPostsList = allPosts.filter((post) =>
-    flaggedPostIds.includes(post.id.toString())
-  );
-
-  if (flaggedPostsList.length === 0) {
+  if (flaggedPostIds.length === 0) {
     container.innerHTML = '<div class="no-posts">Nenhum post sinalizado</div>';
     return;
   }
 
-  flaggedPostsList.forEach((post) => {
+  // Contagem de todos os posts por autor e soma do pending payout
+  const authorStats = {};
+  allPosts.forEach(post => {
+    const author = post.author.trim();
+    if (!authorStats[author]) {
+      authorStats[author] = { postCount: 0, totalPayout: 0 };
+    }
+    authorStats[author].postCount++;
+    authorStats[author].totalPayout += post.pending_payout_value
+      ? parseFloat(post.pending_payout_value)
+      : 0;
+  });
+
+  // Filtrar apenas posts sinalizados
+  const flaggedPostsList = allPosts.filter(post =>
+    flaggedPostIds.includes(post.id.toString())
+  );
+
+  // Pegar apenas 1 post por autor
+  const seenAuthors = new Set();
+  const uniqueAuthorPosts = [];
+  flaggedPostsList.forEach(post => {
+    const author = post.author.trim();
+    if (!seenAuthors.has(author)) {
+      seenAuthors.add(author);
+      uniqueAuthorPosts.push(post);
+    }
+  });
+
+  const totalPages = Math.ceil(uniqueAuthorPosts.length / flaggedPostsPerPage);
+  if (flaggedCurrentPage > totalPages) flaggedCurrentPage = totalPages;
+
+  const startIndex = (flaggedCurrentPage - 1) * flaggedPostsPerPage;
+  const endIndex = startIndex + flaggedPostsPerPage;
+  const pagePosts = uniqueAuthorPosts.slice(startIndex, endIndex);
+
+  pagePosts.forEach(post => {
     const flagInfo = flaggedPosts[post.id];
     const postElement = createPostCard(post);
+
+    const author = post.author.trim();
+    const stats = authorStats[author] || { postCount: 1, totalPayout: 0 };
+
+      // Atualizar o payout do card para o total do autor
+  const payoutElem = postElement.querySelector(".post-payout");
+  if (payoutElem) {
+    payoutElem.textContent = `T: ${stats.totalPayout.toFixed(3)}`;
+  }
 
     const flagDetails = document.createElement("div");
     flagDetails.className = "flag-details";
     flagDetails.innerHTML = `
-            <p><strong>Sinalizado por:</strong> ${flagInfo.flaggedBy}</p>
-            <p><strong>Data:</strong> ${formatDate(flagInfo.timestamp)}</p>
-            ${flagInfo.reason ? `<p><strong>Motivo:</strong> ${flagInfo.reason}</p>` : ""}
-            <button class="btn-primary clear-flag-btn" data-id="${post.id}">
-                <i class="fas fa-check"></i> Limpar Flag
-            </button>
-        `;
+      <p>
+        <strong>Autor:</strong> ${author} 
+        <span class="badge"><strong>posts:</strong> ${stats.postCount} </span>
+      </p>
+      <p><strong>Sinalizado por:</strong> ${flagInfo.flaggedBy}</p>
+      <p><strong>Data:</strong> ${formatDate(flagInfo.timestamp)}</p>
+      ${flagInfo.reason ? `<p><strong>Motivo:</strong> ${flagInfo.reason}</p>` : ""}
+      <button class="btn-primary clear-flag-btn" data-id="${post.id}">
+        <i class="fas fa-check"></i> Limpar Flag
+      </button>
+    `;
 
-    flagDetails
-      .querySelector(".clear-flag-btn")
-      .addEventListener("click", () => {
-        toggleFlagPost(post.id);
-        loadFlaggedPosts();
-      });
+    flagDetails.querySelector(".clear-flag-btn").addEventListener("click", () => {
+      toggleFlagPost(post.id);
+      loadFlaggedPosts();
+      updateFlaggedCount();
+    });
 
     postElement.appendChild(flagDetails);
     container.appendChild(postElement);
   });
+
+  function renderPagination(paginationContainer) {
+    if (!paginationContainer || totalPages <= 1) return;
+
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = "Anterior";
+    prevBtn.disabled = flaggedCurrentPage === 1;
+    prevBtn.addEventListener("click", () => {
+      flaggedCurrentPage--;
+      loadFlaggedPosts();
+    });
+
+    const nextBtn = document.createElement("button");
+    nextBtn.textContent = "Próxima";
+    nextBtn.disabled = flaggedCurrentPage === totalPages;
+    nextBtn.addEventListener("click", () => {
+      flaggedCurrentPage++;
+      loadFlaggedPosts();
+    });
+
+    const pageInfo = document.createElement("span");
+    pageInfo.textContent = `Página ${flaggedCurrentPage} de ${totalPages}`;
+
+    paginationContainer.appendChild(prevBtn);
+    paginationContainer.appendChild(pageInfo);
+    paginationContainer.appendChild(nextBtn);
+  }
+
+  renderPagination(paginationTop);
+  renderPagination(paginationBottom);
 }
+
+
 
 // Busca avançada
 function performAdvancedSearch() {
