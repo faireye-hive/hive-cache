@@ -1157,3 +1157,77 @@ body {
   background-color: #e0f7fa;
   color: #006064;
 }
+
+/* Mini cards apenas para posts sinalizados */
+/* ========================
+ 
+
+
+  Post Cards - Sinalizados
+   ======================== */
+#flaggedContainer .post-card {
+  width: 280px;            /* largura menor para caber mais cards na linha */
+  margin: 10px;
+  display: inline-block;    /* faz os cards ficarem lado a lado */
+  vertical-align: top;
+  box-sizing: border-box;
+  transition: transform 0.2s;
+}
+
+#flaggedContainer .post-card:hover {
+  transform: scale(1.03);  /* leve efeito de zoom ao passar o mouse */
+}
+
+/* Detalhes da flag */
+#flaggedContainer .flag-details {
+  background-color: #f8f9fa;
+  padding: 8px;
+  margin-top: 5px;
+  border-left: 4px solid #ff9800;
+  font-size: 0.85rem;
+}
+
+#flaggedContainer .flag-details p {
+  margin: 3px 0;
+}
+
+/* Botão de limpar flag */
+#flaggedContainer .clear-flag-btn {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  padding: 3px 6px;
+}
+
+/* Paginação do flagged-section */
+#flagged-section .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+#flagged-section .pagination button {
+  padding: 5px 10px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+#flagged-section .pagination button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+#flagged-section .pagination button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+#flagged-section .pagination span {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
