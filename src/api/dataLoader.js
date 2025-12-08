@@ -3,11 +3,12 @@
 import { setAllPosts, setFilteredPosts, allPosts } from '../config.js';
 import { updatePostsDisplay, updateFlaggedCount } from '../ui/domHelpers.js';
 import { showNotification } from '../ui/notifications.js';
-import { loadRankingByPosts, loadRankingByPayout } from '../utils/statsCalculators.js';
+import { loadRankingByPosts, loadRankingByPayout, precalculateAuthorStats } from '../utils/statsCalculators.js';
 import { updateSystemStatus } from '../ui/domHelpers.js';
 
 export async function loadInitialData() {
   await loadPosts();
+  precalculateAuthorStats();
   loadRankingByPosts();
   loadRankingByPayout();
   updateFlaggedCount();

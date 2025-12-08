@@ -1,8 +1,17 @@
 // src/utils/helpers.js
 
-import { allPosts, flaggedPosts } from '../config.js';
+import { allPosts, flaggedPosts } from "../config.js";
+import { authorStatsMap } from "./statsCalculators.js";
 
-// Mova a função escapeHTML para cá
+const SUSPICIOUS_TAGS = new Set([
+  "make-money",
+  "earn-fast",
+  "crypto-scam",
+  "get-rich",
+  "instant-cash",
+]);
+
+// escapeHTML para sanitize
 export function escapeHTML(body) {
   if (!body || typeof body !== "string") return "";
   const sanitized = DOMPurify.sanitize(body, {
@@ -12,12 +21,11 @@ export function escapeHTML(body) {
   return sanitized;
 }
 
-// Mova a função formatDate para cá
+// formatDate
 export function formatDate(dateString) {
   if (!dateString) return "N/A";
   try {
     const date = new Date(dateString);
-    // ... corpo da função formatDate ...
     if (isNaN(date.getTime())) return "Data inválida";
 
     const now = new Date();
@@ -33,13 +41,17 @@ export function formatDate(dateString) {
     } else if (diffDays < 7) {
       return `Há ${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
     } else {
-      return date.toLocaleDateString("pt-BR");
+      // Melhoria de legibilidade
+      return date.toLocaleDateString("pt-BR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
     }
   } catch (e) {
     return "Data inválida";
   }
 }
-
 // Mova a função debounce para cá
 export function debounce(func, wait) {
   let timeout;
@@ -53,64 +65,54 @@ export function debounce(func, wait) {
   };
 }
 
-// Mova a função calculateRiskLevel para cá
+// calculateRiskLevel
 export function calculateRiskLevel(post) {
-  let riskScore = 0;
-  // ... corpo da função calculateRiskLevel ...
-
-  const commandRegex =
-    /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt|summarize)\b/i;
-
-  if (commandRegex.test(post.body || "")) {
-    riskScore += 2;
-  }
-
-  // Payout alto
+  const body = escapeHTML(post.body || "");
   const payout = parseFloat(post.pending_payout_value || 0);
-  if (payout > 500) riskScore += 3;
-  else if (payout > 100) riskScore += 1;
+  const author = post.author;
+  
+  // Normalização de tags: garante que sejam words
+  const tags = Array.isArray(post.tags)
+    ? post.tags.map(t => t.toLowerCase())
+    : String(post.tags || "").toLowerCase().split(/\s+/).filter(t => t); // Adiciona .filter(t => t) para remover strings vazias
+  
+  const category = (post.category || "").toLowerCase();
 
-  // Conteúdo curto
-  const authorPosts = allPosts.filter((p) => p.author === post.author);
-  if (authorPosts.length > 15) {
-    if ((escapeHTML(post.body) || "").length < 50) riskScore += 2;
-  }
+  // Estatísticas do autor (O(1) lookup)
+  const { postCount = 0 } = authorStatsMap.get(author) || {};
 
-  if (authorPosts.length > 100) riskScore += 4;
+  // --- REGRAS ----
 
-  if (authorPosts.length > 200) riskScore += 4;
+  const rules = [
+    // 1. Comandos suspeitos
+    () => /\!(bbh|lady|vote|gif|pizza|beer|pepe|meme|cpt|summarize)\b/i.test(body) ? 2 : 0,
 
-  // Tags suspeitas
-  const suspiciousTags = [
-    "make-money",
-    "earn-fast",
-    "crypto-scam",
-    "get-rich",
-    "instant-cash",
+    // 2. Payout elevado
+    () => payout > 500 ? 3 : payout > 100 ? 1 : 0,
+
+    // 3. Conteúdo curto em autores que postam muito
+    () => postCount > 15 && body.length < 50 ? 2 : 0,
+
+    // 4. Muitos posts (farm)
+    // Note que 8 pontos para > 200 é o valor aditivo de 4 + 4 do código anterior
+    () => postCount > 200 ? 8 : postCount > 100 ? 4 : 0,
+
+    // 5. Tags suspeitas
+    () => tags.some(tag => SUSPICIOUS_TAGS.has(tag)) ? 3 : 0,
+
+    // 6. Já sinalizado
+    () => flaggedPosts[post.id] ? 4 : 0,
+
+    // 7. Categoria suspeita
+    () => ["nsfw", "adult", "gambling"].includes(category) ? 2 : 0,
   ];
-  if (post.tags) {
-    const tagsString = Array.isArray(post.tags)
-      ? post.tags.join(" ").toLowerCase()
-      : String(post.tags).toLowerCase();
 
-    if (suspiciousTags.some((tag) => tagsString.includes(tag))) {
-      riskScore += 3;
-    }
-  }
+  // Somar todas regras (Versão Funcional com reduce)
+  const risk = rules.reduce((total, rule) => total + rule(), 0);
 
-  // Já sinalizado
-  if (flaggedPosts[post.id]) riskScore += 4;
-
-  // Categoria suspeita
-  if (
-    post.category &&
-    ["nsfw", "adult", "gambling"].includes(post.category.toLowerCase())
-  ) {
-    riskScore += 2;
-  }
-
-  if (riskScore >= 7) return "high";
-  if (riskScore >= 4) return "medium";
+  // Níveis
+  if (risk >= 7) return "high";
+  if (risk >= 4) return "medium";
   return "low";
 }
 

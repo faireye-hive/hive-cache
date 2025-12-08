@@ -35,14 +35,12 @@ export function scanForSpam() {
       const author = post.author || "unknown";
 
       const spamPatterns = [
-        "make money fast",
-        "get rich quick",
-        "click here",
-        "buy now",
-        "limited offer",
-        "guaranteed profit",
-        "work from home",
-        "earn $1000 daily",
+        "vote for delegating HP",
+        "additional vote",
+        "steemit.com",
+        "blurt.blog",
+        "blurt.world",
+        "Delagate HP",
       ];
 
       const hasSpamPatterns = spamPatterns.some(

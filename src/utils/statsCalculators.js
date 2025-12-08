@@ -8,6 +8,7 @@ import { viewAuthorPosts, moderateAuthor } from '../ui/modals.js'; // Importar f
 
 
 let chartInstances = {};
+export let authorStatsMap = new Map();
 
 // Mova loadRankingByPosts para cá
 export function loadRankingByPosts() {
@@ -258,6 +259,7 @@ export function createCharts() {
         chartInstances.topApp.destroy();
       }
       const appCounts = countApps(allPosts); // função que já criamos
+
       const sortedApps = Object.entries(appCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10); // top 10 apps
@@ -352,24 +354,30 @@ export function updateStatsSummary() {
   document.getElementById("multiPostAuthors").textContent = multiPostAuthors;
 }
 
-// Mova countApps para cá
+// countApps
 export function countApps(posts) {
   const appCounts = {};
   const userAppMap = {};
 
   posts.forEach((post) => {
     const user = post.author;
-    let app = post.json_metadata?.app || "Desconhecido";
-
-    const match = app.match(/^([a-zA-Z0-9\-]+)\//);
+    let rawApp = post.json_metadata?.app || "desconhecido";
+    
+    // 1. Normalização do nome do app
+    let app;
+    const match = rawApp.match(/^([a-zA-Z0-9\-]+)\//);
     if (match) {
       app = match[1].toLowerCase();
     } else {
-      app = app.toLowerCase();
+      app = rawApp.toLowerCase();
+    }
+    
+    // 2. Inicialização do Set (se necessário)
+    if (!userAppMap[user]) {
+      userAppMap[user] = new Set();
     }
 
-    if (!userAppMap[user]) userAppMap[user] = new Set();
-
+    // 3. Contagem única por usuário
     if (!userAppMap[user].has(app)) {
       userAppMap[user].add(app);
       appCounts[app] = (appCounts[app] || 0) + 1;
@@ -387,4 +395,32 @@ export function calculateAveragePayout() {
     0
   );
   return total / allPosts.length;
+}
+
+export function precalculateAuthorStats() {
+  const stats = new Map();
+
+  allPosts.forEach(post => {
+    const author = post.author;
+    
+    // Inicializar o objeto de estatísticas se o autor for novo
+    if (!stats.has(author)) {
+      stats.set(author, {
+        postCount: 0,
+        shortPostCount: 0,
+        // Você pode adicionar outras estatísticas aqui, como totalPayout
+      });
+    }
+
+    const currentStats = stats.get(author);
+    currentStats.postCount++;
+
+    // Verificar posts curtos (usando a função de escape que está no helpers.js)
+    if ( (post.body || "").length < 50 ) {
+      currentStats.shortPostCount++;
+    }
+  });
+
+  authorStatsMap = stats;
+  // console.log("Estatísticas de Autor pré-calculadas.");
 }
