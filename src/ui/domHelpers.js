@@ -1,6 +1,6 @@
 // src/ui/domHelpers.js
 
-import { moderationSettings, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter } from '../config.js';
+import { moderationSettings, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter,getSortCriteria } from '../config.js';
 import { isUserMuted, muteUser, unmuteUser } from '../moderation/muting.js';
 import { calculateRiskLevel, formatDate, escapeHTML } from '../utils/helpers.js';
 import { showPostDetail, openModerationPanel } from './modals.js';
@@ -17,7 +17,7 @@ export function refreshPostsDisplay() {
   let postsToShow = filteredPosts;
   
   // A. APLICAR FILTRO DE TIPO DE POSTAGEM
-  const currentPostTypeFilter = getPostTypeFilter(); // Assumindo que você importa ou define isso
+  const currentPostTypeFilter = getPostTypeFilter();
 
   if (currentPostTypeFilter === 'only-posts') {
     // parent_author é null/undefined para posts originais
@@ -29,18 +29,52 @@ export function refreshPostsDisplay() {
   
   // B. APLICAR FILTRO DE MUTADOS
   postsToShow = postsToShow.filter((post) => !isUserMuted(post.author));
+  
+  
+  // C. APLICAR ORDENAÇÃO (NOVA LÓGICA OTIMIZADA)
+  const criteria = getSortCriteria();
 
-  // ... O restante da lógica de paginação e renderização ...
+  if (criteria !== 'created-desc') {
+      
+      // 1. Pré-calcular a chave de ordenação em O(N)
+      const postsWithSortKey = postsToShow.map(post => {
+          let sortKey = 0;
+          
+          if (criteria === 'payout-desc') {
+              // Payout é calculado rapidamente, mas usamos a estrutura otimizada por consistência
+              sortKey = parseFloat(post.pending_payout_value || 0);
+          } else if (criteria === 'risk-desc') {
+              // ⭐️ OTIMIZAÇÃO: calculateRiskLevel é chamado APENAS UMA VEZ por post aqui
+              const level = calculateRiskLevel(post);
+              // Converte o nível de risco para um valor numérico para ordenação
+              sortKey = level === 'high' ? 3 : level === 'medium' ? 2 : 1;
+          }
+          
+          return { post, sortKey };
+      });
+
+      // 2. Ordenar a lista usando a chave pré-calculada (O(N log N) rápido)
+      postsWithSortKey.sort((a, b) => {
+          // Ordenação decrescente (do maior para o menor) para Payout e Risco
+          return b.sortKey - a.sortKey; 
+      });
+
+      // 3. Mapear de volta para o array de posts original
+      postsToShow = postsWithSortKey.map(item => item.post);
+  }
+  // FIM DA ORDENAÇÃO OTIMIZADA
+
 
   const container = document.getElementById("postsContainer");
   const pageInfo = document.getElementById("pageInfo");
 
   if (postsToShow.length === 0) {
     container.innerHTML = '<div class="no-posts">Nenhum post encontrado</div>';
-    pageInfo.textContent = "Página 1 de 1";
+    pageInfo.textContent = "Página 0 de 0";
     return;
   }
 
+  // D. APLICAR PAGINAÇÃO
   const startIndex = (currentPage - 1) * postsPerPage;
   const endIndex = startIndex + postsPerPage;
   const pagePosts = postsToShow.slice(startIndex, endIndex);

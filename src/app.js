@@ -8,7 +8,8 @@ import { initModalListeners, openMutedUsersManager } from './ui/modals.js';
 import { loadInitialData, loadPosts, showCacheStats, clearCache } from './api/dataLoader.js';
 import { searchPosts, applyFilter, performAdvancedSearch } from './moderation/filtering.js';
 import { scanForSpam, scanForPlagiarism } from './moderation/scan.js';
-import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage, filteredPosts, getPostTypeFilter, setPostTypeFilter } from './config.js';
+import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage,
+          filteredPosts, getPostTypeFilter, setPostTypeFilter,getSortCriteria,setSortCriteria } from './config.js';
 import { debounce } from './utils/helpers.js';
 
 
@@ -110,6 +111,19 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 
 function initPostTypeFilter() {
+
+  // NOVO: Ordenação
+  const sortSelect = document.getElementById("sortCriteria");
+  if (sortSelect) {
+      // Garante o estado inicial
+      sortSelect.value = getSortCriteria(); 
+      
+      sortSelect.addEventListener("change", (e) => {
+          setSortCriteria(e.target.value);
+          setCurrentPage(1); // Volta para a primeira página
+          refreshPostsDisplay(); // Recarrega com a nova ordenação
+      });
+  }
     const filterSelect = document.getElementById("postTypeFilter");
     if (filterSelect) {
         filterSelect.addEventListener('change', (e) => {

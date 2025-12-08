@@ -8,6 +8,7 @@ export let currentPage = 1;
 export let postsPerPage = 25;
 export let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
 let postTypeFilter = 'all'; 
+export let sortCriteria = 'created-desc';
 
 export let flaggedCurrentPage = 1;
 export const flaggedPostsPerPage = 25;
@@ -60,4 +61,14 @@ export function setPostTypeFilter(newFilter) {
 
 export function getPostTypeFilter() {
     return postTypeFilter;
+}
+
+// NOVO SETTER
+export function setSortCriteria(newCriteria) {
+    sortCriteria = newCriteria;
+}
+
+// NOVO GETTER
+export function getSortCriteria() {
+    return sortCriteria;
 }
