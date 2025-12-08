@@ -107,6 +107,9 @@
 
     <!-- Conteúdo Principal -->
     <div class="container">
+
+
+
       <!-- Sidebar -->
       <div class="sidebar">
         <div class="sidebar-section">
@@ -183,7 +186,15 @@
         <section id="posts-section" class="content-section active">
           <div class="section-header">
             <h2><i class="fas fa-newspaper"></i> Posts Recentes</h2>
+
+
             <div class="section-controls">
+
+                                <select id="postTypeFilter">
+  <option value="all">Todos os Posts</option>
+  <option value="only-posts">Apenas Posts Originais</option>
+  <option value="only-comments">Apenas Comentários</option>
+</select>
               <div class="pagination">
                 <button id="prevPage" class="btn-pagination">
                   <i class="fas fa-chevron-left"></i>

@@ -1,6 +1,6 @@
 // src/app.js
 
-import { loadChartJS, updatePostsDisplay, updateSystemStatus, selectAllPosts } from './ui/domHelpers.js';
+import { loadChartJS, updatePostsDisplay, updateSystemStatus, selectAllPosts,refreshPostsDisplay } from './ui/domHelpers.js';
 import { loadSettings, applySettings, saveSettings } from './core/settings.js';
 import { initLoginSystem } from './core/auth.js';
 import { initNavigation } from './core/navigation.js';
@@ -8,7 +8,7 @@ import { initModalListeners, openMutedUsersManager } from './ui/modals.js';
 import { loadInitialData, loadPosts, showCacheStats, clearCache } from './api/dataLoader.js';
 import { searchPosts, applyFilter, performAdvancedSearch } from './moderation/filtering.js';
 import { scanForSpam, scanForPlagiarism } from './moderation/scan.js';
-import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage, filteredPosts } from './config.js';
+import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage, filteredPosts, getPostTypeFilter, setPostTypeFilter } from './config.js';
 import { debounce } from './utils/helpers.js';
 
 
@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   loadSettings();
   applySettings();
-
+  initPostTypeFilter()
   initLoginSystem();
   initNavigation();
   initEventListeners();
@@ -107,3 +107,22 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   setInterval(updateSystemStatus, 30000);
 });
+
+
+function initPostTypeFilter() {
+    const filterSelect = document.getElementById("postTypeFilter");
+    if (filterSelect) {
+        filterSelect.addEventListener('change', (e) => {
+            const newFilter = e.target.value;
+            // 1. Define o novo estado
+            setPostTypeFilter(newFilter); 
+            // 2. Volta para a primeira página ao mudar o filtro
+            setCurrentPage(1); 
+            // 3. Recarrega a exibição
+            refreshPostsDisplay(); 
+        });
+        
+        // Garante que o dropdown reflita o estado atual
+        filterSelect.value = getPostTypeFilter();
+    }
+}

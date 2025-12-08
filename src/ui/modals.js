@@ -9,7 +9,7 @@ import { updateFlaggedCount, updatePostsDisplay, refreshPostsDisplay } from './d
 import { formatDate, escapeHTML } from '../utils/helpers.js';
 import { showNotification } from './notifications.js';
 
-// Mova closeModal para cá
+// closeModal
 export function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
@@ -17,7 +17,7 @@ export function closeModal(modalId) {
   }
 }
 
-// Mova openSettingsModal para cá
+// openSettingsModal
 export function openSettingsModal() {
   const modal = document.getElementById("settingsModal");
   if (!modal) return;

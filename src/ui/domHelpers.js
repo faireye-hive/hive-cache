@@ -1,6 +1,6 @@
 // src/ui/domHelpers.js
 
-import { moderationSettings, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage } from '../config.js';
+import { moderationSettings, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter } from '../config.js';
 import { isUserMuted, muteUser, unmuteUser } from '../moderation/muting.js';
 import { calculateRiskLevel, formatDate, escapeHTML } from '../utils/helpers.js';
 import { showPostDetail, openModerationPanel } from './modals.js';
@@ -13,8 +13,24 @@ export function updatePostsDisplay() {
 
 // Mova refreshPostsDisplay para cá (e renomeie a chamada para toggleFlagPost)
 export function refreshPostsDisplay() {
-  // Filtrar posts removendo os de usuários mutados
-  const postsToShow = filteredPosts.filter((post) => !isUserMuted(post.author));
+  // 1. Iniciar filtragem pelos posts do filtro de busca original
+  let postsToShow = filteredPosts;
+  
+  // A. APLICAR FILTRO DE TIPO DE POSTAGEM
+  const currentPostTypeFilter = getPostTypeFilter(); // Assumindo que você importa ou define isso
+
+  if (currentPostTypeFilter === 'only-posts') {
+    // parent_author é null/undefined para posts originais
+    postsToShow = postsToShow.filter(post => !post.parent_author);
+  } else if (currentPostTypeFilter === 'only-comments') {
+    // parent_author existe para comentários
+    postsToShow = postsToShow.filter(post => post.parent_author);
+  }
+  
+  // B. APLICAR FILTRO DE MUTADOS
+  postsToShow = postsToShow.filter((post) => !isUserMuted(post.author));
+
+  // ... O restante da lógica de paginação e renderização ...
 
   const container = document.getElementById("postsContainer");
   const pageInfo = document.getElementById("pageInfo");

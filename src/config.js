@@ -7,6 +7,7 @@ export let filteredPosts = [];
 export let currentPage = 1;
 export let postsPerPage = 25;
 export let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
+let postTypeFilter = 'all'; 
 
 export let flaggedCurrentPage = 1;
 export const flaggedPostsPerPage = 25;
@@ -49,4 +50,14 @@ export function setCurrentUser(user) {
 
 export function setFlaggedCurrentPage(page) {
     flaggedCurrentPage = page;
+}
+
+
+
+export function setPostTypeFilter(newFilter) {
+    postTypeFilter = newFilter;
+}
+
+export function getPostTypeFilter() {
+    return postTypeFilter;
 }
