@@ -6,8 +6,14 @@ import { showNotification } from '../ui/notifications.js';
 import { loadRankingByPosts, loadRankingByPayout, precalculateAuthorStats } from '../utils/statsCalculators.js';
 import { updateSystemStatus } from '../ui/domHelpers.js';
 
+
+const BLACKLIST_FILE_PATH = './blacklist.json';
+
+export let AUTHOR_BLACKLIST = new Set();
+
 export async function loadInitialData() {
   await loadPosts();
+  await loadBlacklist();
   precalculateAuthorStats();
   loadRankingByPosts();
   loadRankingByPayout();
@@ -96,4 +102,36 @@ export async function clearCache() {
 
     resolve(true);
   });
+}
+
+
+
+
+export async function loadBlacklist() {
+    try {
+        // 1. Fazer a requisição HTTP GET para o arquivo JSON
+        const response = await fetch(BLACKLIST_FILE_PATH);
+
+        // Verifica se a requisição foi bem-sucedida (código 200)
+        if (!response.ok) {
+            throw new Error(`Erro de rede ou arquivo não encontrado. Status: ${response.status}`);
+        }
+
+        // 2. Converte a resposta para um Array JavaScript
+        const authorsArray = await response.json();
+
+        // 3. Cria o Set para buscas O(1)
+        const tempBlacklist = new Set(authorsArray);
+
+        // 4. ATUALIZAÇÃO SÍNCRONA
+        AUTHOR_BLACKLIST = tempBlacklist;
+        
+        // Retorna o Set para confirmação, se necessário
+        return AUTHOR_BLACKLIST;
+
+    } catch (error) {
+        console.error(`[RISK CORE] ❌ ERRO ao carregar a lista negra no frontend: ${error.message}`);
+        // Em caso de falha, AUTHOR_BLACKLIST permanece um Set vazio, evitando quebrar a aplicação.
+        return new Set();
+    }
 }

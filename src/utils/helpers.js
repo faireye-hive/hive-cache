@@ -2,6 +2,11 @@
 
 import { allPosts, flaggedPosts } from "../config.js";
 import { authorStatsMap } from "./statsCalculators.js";
+import { AUTHOR_BLACKLIST } from '../api/dataLoader.js';
+
+
+
+
 
 const SUSPICIOUS_TAGS = new Set([
   "make-money",
@@ -65,23 +70,33 @@ export function debounce(func, wait) {
   };
 }
 
+
 // calculateRiskLevel
 export function calculateRiskLevel(post) {
   const body = escapeHTML(post.body || "");
   const payout = parseFloat(post.pending_payout_value || 0);
   const author = post.author;
+  let rawApp = post.json_metadata?.app || "desconhecido";
+  let lastedit = post.last_edited || "";
+
+  const SUSPICIOUS_APP_PREFIXES = ["inleo", "desconhecido"];
   
   // Normalização de tags: garante que sejam words
   const tags = Array.isArray(post.tags)
     ? post.tags.map(t => t.toLowerCase())
     : String(post.tags || "").toLowerCase().split(/\s+/).filter(t => t); // Adiciona .filter(t => t) para remover strings vazias
-  
+
+
   const category = (post.category || "").toLowerCase();
 
   // Estatísticas do autor (O(1) lookup)
   const { postCount = 0 } = authorStatsMap.get(author) || {};
 
   // --- REGRAS ----
+
+  const MITIGATION_KEYWORDS = [
+    "strava2hive"
+];
 
   const rules = [
     // 1. Comandos suspeitos
@@ -92,6 +107,8 @@ export function calculateRiskLevel(post) {
 
     // 3. Conteúdo curto em autores que postam muito
     () => postCount > 15 && body.length < 50 ? 2 : 0,
+
+    () => AUTHOR_BLACKLIST.has(post.author) ? 8 : 0,
 
     // 4. Muitos posts (farm)
     // Note que 8 pontos para > 200 é o valor aditivo de 4 + 4 do código anterior
@@ -105,6 +122,46 @@ export function calculateRiskLevel(post) {
 
     // 7. Categoria suspeita
     () => ["nsfw", "adult", "gambling"].includes(category) ? 2 : 0,
+
+    () => {
+        const appLower = rawApp.toLowerCase();
+        const appss = "UniversalTipBot".toLowerCase();
+        
+        // 1. Caso "inleo": Risco 7 direto.
+        if (appLower.includes("inleo")) {
+            return 7; 
+        }
+        if (appLower.includes(appss)) {
+            return 7; 
+        }
+
+        // 2. Caso "desconhecido":
+        if (appLower.includes("desconhecido")) {
+            
+            // **NOVO TESTE DE MITIGAÇÃO:**
+            // Verifica se o body contém alguma das palavras-chave de mitigação.
+            const isMitigatedByBody = MITIGATION_KEYWORDS.some(keyword => 
+                body.toLowerCase().includes(keyword.toLowerCase())
+            );
+
+            // Se o body tiver uma palavra de mitigação, o risco é 0.
+            if (isMitigatedByBody) {
+                return 0;
+            }
+
+            // Se NÃO foi mitigado pelo body, verifica a edição (como você queria):
+            // Só é risco 7 se NÃO foi editado.
+            if (lastedit === "") { 
+                return 7;
+            }
+            
+            // Se foi editado E NÃO foi mitigado, o risco é 0.
+            return 0; 
+        }
+        
+        // 3. Outros Apps: Risco 0.
+        return 0;
+    },
   ];
 
   // Somar todas regras (Versão Funcional com reduce)
