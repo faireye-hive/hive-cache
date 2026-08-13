@@ -73,7 +73,7 @@ export function loadRankingByPayout() {
   const ranking = Object.entries(authorStats)
     .map(([author, stats]) => ({ author, ...stats }))
     .sort((a, b) => b.totalPayout - a.totalPayout)
-    .slice(0, 100);
+    .slice(0, 1500);
 
   displayRanking(ranking, "payout", "rankingPayoutContainer");
 }
