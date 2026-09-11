@@ -1,0 +1,6 @@
+{
+  "name": "Hive Moderation Dashboard",
+  "description": "Dashboard for monitoring, analyzing, and moderating Hive blockchain posts and comments with risk analysis and statistics",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

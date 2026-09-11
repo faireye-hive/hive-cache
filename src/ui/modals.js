@@ -8,6 +8,11 @@ import { loadFlaggedPosts, searchPosts } from '../moderation/filtering.js';
 import { updateFlaggedCount, updatePostsDisplay, refreshPostsDisplay } from './domHelpers.js';
 import { formatDate, escapeHTML } from '../utils/helpers.js';
 import { showNotification } from './notifications.js';
+import { openOnchainBlacklistModal } from './onchainBlacklistModal.js';
+import { renderAuthorReputationHtml, handleManualReputationRefresh } from '../api/reputationService.js';
+import { openDownvoteModal } from './downvoteModal.js';
+import { createSafeImagePreviewHtml } from '../utils/imageProxy.js';
+import { isAccountOnchainBlacklisted } from '../api/onchainBlacklistService.js';
 
 // closeModal
 export function closeModal(modalId) {
@@ -57,10 +62,24 @@ export function showPostDetail(post) {
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>");
 
+  const authorRepHtml = renderAuthorReputationHtml(post.author, post.author_reputation);
+  const previewImgHtml = createSafeImagePreviewHtml(post, { width: 640, height: 0, className: 'detail-preview-image' });
+  const isBlacklisted = isAccountOnchainBlacklisted(post.author);
+  const blacklistFlairHtml = isBlacklisted
+    ? `<span class="badge-blacklisted-flair" title="Autor na Blacklist On-Chain da Hive (bridge.get_follow_list)"><i class="fas fa-ban"></i> BLACKLISTED</span>`
+    : '';
+
   body.innerHTML = `
+        ${previewImgHtml ? `<div class="detail-image-banner" style="margin-bottom: 1rem;">${previewImgHtml}</div>` : ''}
+        ${isBlacklisted ? `
+          <div class="blacklist-detail-alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span><strong>Atenção:</strong> Este autor (@${escapeHTML(post.author)}) está listado na <strong>Blacklist On-Chain</strong> da Hive Blockchain.</span>
+          </div>
+        ` : ''}
         <div class="post-detail-header">
-            <div class="detail-item">
-                <strong>Autor:</strong> ${post.author}
+            <div class="detail-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <strong>Autor:</strong> @${escapeHTML(post.author)} ${authorRepHtml} ${blacklistFlairHtml}
             </div>
             <div class="detail-item">
                 <strong>Payout Pendente:</strong> $${parseFloat(post.pending_payout_value || 0).toFixed(2)}
@@ -69,12 +88,12 @@ export function showPostDetail(post) {
                 <strong>Data:</strong> ${new Date(post.created).toLocaleString("pt-BR")}
             </div>
             <div class="detail-item">
-                <strong>Categoria:</strong> ${post.category || "N/A"}
+                <strong>Categoria:</strong> ${escapeHTML(post.category || "N/A")}
             </div>
         </div>
         
         <div class="post-detail-tags">
-            <strong>Tags:</strong> ${post.tags || "Nenhuma"}
+            <strong>Tags:</strong> ${escapeHTML(post.tags || "Nenhuma")}
         </div>
         
         <div class="post-detail-content">
@@ -93,13 +112,19 @@ export function showPostDetail(post) {
                 <strong>Beneficiary Payout:</strong> $${parseFloat(post.beneficiary_payout_value || 0).toFixed(2)}
             </div>
             <div class="stat-item">
-                <strong>Author Rewards:</strong> ${post.author_rewards || "0"} HIVE
+                <strong>Author Rewards:</strong> ${escapeHTML(String(post.author_rewards || "0"))} HIVE
             </div>
         </div>
         
         <div class="post-detail-actions">
             <button class="btn-primary toggle-flag-btn" data-id="${post.id}">
                 ${flaggedPosts[post.id] ? "Remover Flag" : "Sinalizar Post"}
+            </button>
+            <button class="btn-action downvote-detail-btn" style="background-color: #ef4444; color: white;">
+                <i class="fas fa-arrow-down"></i> Downvote (Keychain)
+            </button>
+            <button class="btn-action blacklist-onchain-detail-btn" style="background-color: #8b5cf6; color: white;">
+                <i class="fas fa-shield-virus"></i> Blacklist On-Chain
             </button>
             <button class="btn-action view-author-btn" data-author="${post.author}">
                 Ver Posts do Autor
@@ -110,9 +135,33 @@ export function showPostDetail(post) {
         </div>
     `;
 
+    const refreshRepBtn = body.querySelector(".btn-refresh-rep");
+    if (refreshRepBtn) {
+      refreshRepBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        handleManualReputationRefresh(post.author, refreshRepBtn);
+      });
+    }
+
+    const downvoteBtn = body.querySelector(".downvote-detail-btn");
+    if (downvoteBtn) {
+      downvoteBtn.addEventListener("click", () => {
+        closeModal("postDetailModal");
+        openDownvoteModal(post);
+      });
+    }
+
     body.querySelector(".toggle-flag-btn").addEventListener("click", function () {
         toggleFlagPost(post.id);
         closeModal("postDetailModal");
+    });
+
+    body.querySelector(".blacklist-onchain-detail-btn").addEventListener("click", function () {
+        closeModal("postDetailModal");
+        openOnchainBlacklistModal(post.author, {
+            reason: "Moderação de Post",
+            notes: `Post: "${post.title || post.id}"`
+        });
     });
 
     body.querySelector(".view-author-btn").addEventListener("click", function () {
@@ -238,8 +287,10 @@ export function viewAuthorPosts(author) {
 }
 
 export function moderateAuthor(author) {
-  showNotification(`Moderação para autor: ${author}`, "info");
-  viewAuthorPosts(author);
+  openOnchainBlacklistModal(author, {
+    reason: "Moderação Direta",
+    notes: `Moderação iniciada para @${author}`
+  });
 }
 
 export function openModerationPanel(post) {

@@ -1,7 +1,7 @@
 // src/utils/statsCalculators.js
 
 import { allPosts, flaggedPosts, setPostsPerPage } from '../config.js';
-import { formatDate } from './helpers.js';
+import { formatDate, parseHiveDate, extractPostApp, normalizeAppName } from './helpers.js';
 import { showNotification } from '../ui/notifications.js';
 import { updateSystemStatus } from '../ui/domHelpers.js';
 import { viewAuthorPosts, moderateAuthor } from '../ui/modals.js'; // Importar funções de ação
@@ -21,7 +21,7 @@ export function loadRankingByPosts() {
 
   allPosts.forEach((post) => {
     // ... corpo da função ...
-    if (new Date(post.created) > cutoffDate) {
+    if (parseHiveDate(post.created) > cutoffDate) {
       if (!authorStats[post.author]) {
         authorStats[post.author] = {
           posts: 0,
@@ -55,7 +55,7 @@ export function loadRankingByPayout() {
 
   allPosts.forEach((post) => {
     // ... corpo da função ...
-    if (new Date(post.created) > cutoffDate) {
+    if (parseHiveDate(post.created) > cutoffDate) {
       if (!authorStats[post.author]) {
         authorStats[post.author] = {
           posts: 0,
@@ -361,16 +361,8 @@ export function countApps(posts) {
 
   posts.forEach((post) => {
     const user = post.author;
-    let rawApp = post.json_metadata?.app || "desconhecido";
-    
-    // 1. Normalização do nome do app
-    let app;
-    const match = rawApp.match(/^([a-zA-Z0-9\-]+)\//);
-    if (match) {
-      app = match[1].toLowerCase();
-    } else {
-      app = rawApp.toLowerCase();
-    }
+    const rawApp = extractPostApp(post);
+    const app = normalizeAppName(rawApp);
     
     // 2. Inicialização do Set (se necessário)
     if (!userAppMap[user]) {

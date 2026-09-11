@@ -1,10 +1,12 @@
 // src/api/dataLoader.js
 
 import { setAllPosts, setFilteredPosts, allPosts } from '../config.js';
-import { updatePostsDisplay, updateFlaggedCount } from '../ui/domHelpers.js';
+export { allPosts };
+import { updatePostsDisplay, updateFlaggedCount, updateAppFilterDropdown } from '../ui/domHelpers.js';
 import { showNotification } from '../ui/notifications.js';
 import { loadRankingByPosts, loadRankingByPayout, precalculateAuthorStats } from '../utils/statsCalculators.js';
 import { updateSystemStatus } from '../ui/domHelpers.js';
+import { seedReputationCacheFromPosts } from './reputationService.js';
 
 
 const BLACKLIST_FILE_PATH = './blacklist.json';
@@ -54,6 +56,8 @@ export async function loadPosts() {
     if (data.length > 0) {
       setAllPosts(data);
       setFilteredPosts([...data]);
+      seedReputationCacheFromPosts(data);
+      updateAppFilterDropdown();
       updatePostsDisplay();
       updateSystemStatus();
 
@@ -86,8 +90,105 @@ export async function loadPosts() {
 
 // Funções showCacheStats e clearCache
 export async function showCacheStats() {
-  // Implementação de showCacheStats se necessário
-  showNotification("Estatísticas de cache exibidas no console (simulado)", "info");
+  try {
+    const res = await fetch('/api/blockchain-status');
+    const data = await res.json();
+    const count = allPosts.length;
+    const sizeMB = data.file?.sizeMB || '0';
+    const lastSync = data.sync?.lastSyncTime ? new Date(data.sync.lastSyncTime).toLocaleTimeString('pt-BR') : 'N/A';
+    showNotification(
+      `Cache Hive: ${count} posts (${sizeMB} MB). Último sync HAFSQL: ${lastSync}`,
+      "info"
+    );
+  } catch (e) {
+    showNotification(`Posts em memória: ${allPosts.length}`, "info");
+  }
+}
+
+export async function syncBlockchainFromNetwork(hours = 24) {
+  const syncBtn = document.getElementById("syncBlockchainBtn");
+  const originalText = syncBtn ? syncBtn.innerHTML : "";
+  if (syncBtn) {
+    syncBtn.disabled = true;
+    syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+  }
+
+  showNotification(`Baixando dados reais da blockchain Hive (últimas ${hours}h via HAFSQL)...`, "info");
+
+  try {
+    const response = await fetch(`/api/sync-blockchain?hours=${hours}`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    showNotification(
+      `Sucesso! ${result.count.toLocaleString('pt-BR')} posts reais baixados da blockchain Hive em ${(result.durationMs / 1000).toFixed(1)}s.`,
+      "success"
+    );
+
+    // Recarrega os posts na memória da aplicação e atualiza visualização
+    await loadPosts();
+    precalculateAuthorStats();
+    loadRankingByPosts();
+    loadRankingByPayout();
+    updateFlaggedCount();
+  } catch (error) {
+    console.error("Erro na sincronização da blockchain:", error);
+    showNotification(
+      `Falha na sincronização: ${error.message}`,
+      "error"
+    );
+  } finally {
+    if (syncBtn) {
+      syncBtn.disabled = false;
+      syncBtn.innerHTML = originalText || '<i class="fas fa-cloud-download-alt"></i> Sincronizar Blockchain';
+    }
+  }
+}
+
+/**
+ * Sincroniza novos posts da blockchain Hive via RPC nativo (SEM HAFSQL).
+ * Atualiza e mescla no cache local NDJSON.
+ */
+export async function syncBlockchainRpcFromNetwork(limit = 20) {
+  showNotification(`Baixando posts recentes diretamente via Hive RPC (sem HAFSQL)...`, "info");
+
+  try {
+    const response = await fetch(`/api/sync-rpc?limit=${limit}`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    showNotification(
+      `Sincronização RPC concluída! ${result.newPostsCount} posts recentes baixados via nó ${result.node || 'Hive'}. Total em cache: ${result.totalCount}.`,
+      "success"
+    );
+
+    // Recarrega os posts na memória e atualiza visualizações
+    await loadPosts();
+    precalculateAuthorStats();
+    loadRankingByPosts();
+    loadRankingByPayout();
+    updateFlaggedCount();
+    return result;
+  } catch (error) {
+    console.error("Erro na sincronização RPC da blockchain:", error);
+    showNotification(
+      `Falha na sincronização RPC: ${error.message}`,
+      "error"
+    );
+    throw error;
+  }
 }
 
 export async function clearCache() {

@@ -2,19 +2,22 @@
 
 import { allPosts, filteredPosts, currentPage, postsPerPage, setFilteredPosts, setCurrentPage, flaggedPosts, flaggedCurrentPage, flaggedPostsPerPage, setFlaggedCurrentPage, setPostsPerPage, moderationSettings } from '../config.js';
 import { updatePostsDisplay, refreshPostsDisplay, createPostCard, updateFlaggedCount } from '../ui/domHelpers.js';
-import { escapeHTML, normalizeTags, formatDate,calculateRiskLevel } from '../utils/helpers.js';
+import { escapeHTML, normalizeTags, formatDate, parseHiveDate, calculateRiskLevel, extractPostApp, normalizeAppName } from '../utils/helpers.js';
 import { showNotification } from '../ui/notifications.js';
 import { toggleFlagPost } from './flagging.js';
 
 // Mova searchPosts para cá
 export function searchPosts() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+  const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
   const filterType = document.getElementById("searchFilter").value;
 
   if (!searchTerm) {
     setFilteredPosts([...allPosts]);
   } else {
     const results = allPosts.filter((post) => {
+      const rawApp = extractPostApp(post);
+      const normApp = normalizeAppName(rawApp);
+
       switch (filterType) {
         case "author":
           return post.author.toLowerCase().includes(searchTerm);
@@ -32,12 +35,17 @@ export function searchPosts() {
         case "tags":
           return normalizeTags(post.tags).includes(searchTerm);
 
+        case "app":
+          return normApp.includes(searchTerm) || rawApp.toLowerCase().includes(searchTerm);
+
         default:
           return (
             post.author.toLowerCase().includes(searchTerm) ||
             (escapeHTML(post.title) || "").toLowerCase().includes(searchTerm) ||
             (escapeHTML(post.body) || "").toLowerCase().includes(searchTerm) ||
-            normalizeTags(post.tags).includes(searchTerm)
+            normalizeTags(post.tags).includes(searchTerm) ||
+            normApp.includes(searchTerm) ||
+            rawApp.toLowerCase().includes(searchTerm)
           );
       }
     });
@@ -57,14 +65,14 @@ export function applyFilter(filterType) {
     case "last-hour":
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       results = allPosts.filter(
-        (post) => new Date(post.created) > oneHourAgo
+        (post) => parseHiveDate(post.created) > oneHourAgo
       );
       break;
 
     case "last-6h":
       const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
       results = allPosts.filter(
-        (post) => new Date(post.created) > sixHoursAgo
+        (post) => parseHiveDate(post.created) > sixHoursAgo
       );
       break;
 
@@ -286,10 +294,12 @@ export function loadFlaggedPosts() {
 
 // Mova performAdvancedSearch e displaySearchResults para cá
 export function performAdvancedSearch() {
-  const author = document.getElementById("searchAuthor").value.toLowerCase();
-  const title = document.getElementById("searchTitle").value.toLowerCase();
-  const tags = document.getElementById("searchTags").value.toLowerCase();
-  const content = document.getElementById("searchContent").value.toLowerCase();
+  const author = document.getElementById("searchAuthor").value.toLowerCase().trim();
+  const title = document.getElementById("searchTitle").value.toLowerCase().trim();
+  const tags = document.getElementById("searchTags").value.toLowerCase().trim();
+  const appInput = document.getElementById("searchApp");
+  const app = appInput ? appInput.value.toLowerCase().trim() : "";
+  const content = document.getElementById("searchContent").value.toLowerCase().trim();
   const dateFrom = document.getElementById("searchDateFrom").value;
   const dateTo = document.getElementById("searchDateTo").value;
   const minPayout =
@@ -302,6 +312,14 @@ export function performAdvancedSearch() {
     results = results.filter((post) =>
       post.author.toLowerCase().includes(author)
     );
+  }
+
+  if (app) {
+    results = results.filter((post) => {
+      const rawApp = extractPostApp(post);
+      const normApp = normalizeAppName(rawApp);
+      return normApp.includes(app) || rawApp.toLowerCase().includes(app);
+    });
   }
 
   if (title) {
@@ -344,12 +362,12 @@ export function performAdvancedSearch() {
 
   if (dateFrom) {
     const fromDate = new Date(dateFrom);
-    results = results.filter((post) => new Date(post.created) >= fromDate);
+    results = results.filter((post) => parseHiveDate(post.created) >= fromDate);
   }
 
   if (dateTo) {
     const toDate = new Date(dateTo);
-    results = results.filter((post) => new Date(post.created) <= toDate);
+    results = results.filter((post) => parseHiveDate(post.created) <= toDate);
   }
 
   if (minPayout > 0) {

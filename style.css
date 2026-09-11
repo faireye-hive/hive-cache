@@ -474,7 +474,26 @@ body {
 .section-controls {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.section-controls select {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: white;
+    font-size: 0.88rem;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    max-width: 220px;
+}
+
+.section-controls select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .pagination {
@@ -592,20 +611,45 @@ body {
 }
 
 .post-app {
-    font-size: 0.85rem;
-    color: #555;
-    background-color: #f0f0f0;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
+    font-size: 0.82rem;
+    color: #4b5563;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin-top: 8px;
     font-weight: 500;
-    font-family: sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
+.post-app:hover {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+    transform: translateY(-1px);
+}
+
+.post-app[data-app="hive.blog"],
 .post-app[data-app="Hive.blog"] {
     background-color: #e0f7fa;
     color: #006064;
+    border-color: #b2ebf2;
+}
+
+.post-app[data-app="peakd"] {
+    background-color: #fce7f3;
+    color: #9d174d;
+    border-color: #fbcfe8;
+}
+
+.post-app[data-app="ecency"] {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border-color: #bae6fd;
 }
 
 .post-tags {
@@ -1581,3 +1625,1134 @@ button,
     .theme-dark .ranking-stat {
         color: #cccccc;
     }
+
+/* ========================================================
+   HIVE KEYCHAIN & ON-CHAIN BLACKLIST STYLES
+   ======================================================== */
+
+.keychain-status-box {
+    margin-bottom: 1rem;
+}
+
+.keychain-detected {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.keychain-detected i {
+    color: #10b981;
+    font-size: 1.1rem;
+}
+
+.keychain-not-detected {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.keychain-not-detected i {
+    color: #f59e0b;
+    font-size: 1rem;
+    margin-top: 2px;
+}
+
+.login-keychain-card {
+    background: #fdfdfd;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-full-width {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.login-divider {
+    text-align: center;
+    position: relative;
+    margin: 1.25rem 0;
+}
+
+.login-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.login-divider span {
+    background: white;
+    position: relative;
+    padding: 0 12px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.btn-link-action {
+    background: transparent;
+    border: none;
+    color: var(--secondary-color);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    display: block;
+    margin: 6px auto 0;
+}
+
+.btn-link-action:hover {
+    color: var(--primary-color);
+}
+
+/* User Profile Navbar */
+.user-profile-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 4px 10px 4px 6px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: white;
+}
+
+.user-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid white;
+}
+
+.badge-keychain {
+    background-color: #10b981;
+    color: white;
+    padding: 2px 7px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-blacklist-nav {
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+
+.btn-blacklist-nav:hover {
+    background: #7c3aed;
+}
+
+.btn-login-nav {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.onchain-blacklist-btn {
+    color: #8b5cf6;
+}
+
+.onchain-blacklist-btn:hover {
+    background-color: #ede9fe;
+    color: #6d28d9;
+}
+
+/* Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    gap: 4px;
+}
+
+.modal-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.modal-tab:hover {
+    color: var(--secondary-color);
+}
+
+.modal-tab.active {
+    color: #8b5cf6;
+    border-bottom-color: #8b5cf6;
+}
+
+/* JSON Preview Box */
+.json-preview-container {
+    background: #1e1e24;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 10px;
+    border: 1px solid #33333e;
+}
+
+.json-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: #141418;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-family: monospace;
+    border-bottom: 1px solid #282832;
+}
+
+.preview-badge {
+    background: #374151;
+    color: #60a5fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.json-preview-code {
+    margin: 0;
+    padding: 10px 12px;
+    color: #34d399;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    max-height: 160px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Blacklist History Cards */
+.blacklist-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.blacklist-history-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: box-shadow 0.2s;
+}
+
+.blacklist-history-card:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.bl-card-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.bl-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #d1d5db;
+}
+
+.bl-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.bl-user-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.bl-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.bl-protocol-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #ede9fe;
+    color: #6d28d9;
+    font-weight: 600;
+}
+
+.bl-reason {
+    font-size: 0.85rem;
+    color: #374151;
+}
+
+.bl-notes {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.bl-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.bl-card-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-outline-danger {
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.btn-outline-danger:hover {
+    background: #fef2f2;
+}
+
+.empty-state-box {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px dashed #d1d5db;
+}
+
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.alert-warning {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.alert-info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+/* Dark Theme Adaptations */
+.theme-dark .keychain-detected {
+    background-color: #064e3b;
+    border-color: #059669;
+    color: #a7f3d0;
+}
+
+.theme-dark .keychain-not-detected {
+    background-color: #78350f;
+    border-color: #d97706;
+    color: #fef3c7;
+}
+
+.theme-dark .login-keychain-card {
+    background: #2b2b2b;
+    border-color: #404040;
+}
+
+.theme-dark .login-divider span {
+    background: #2d2d2d;
+    color: #9ca3af;
+}
+
+.theme-dark .blacklist-history-card {
+    background: #2b2b2b;
+    border-color: #404040;
+}
+
+.theme-dark .bl-reason {
+    color: #e5e7eb;
+}
+
+.theme-dark .empty-state-box {
+    background: #2b2b2b;
+    border-color: #404040;
+}
+
+/* ========================================================
+   VIEW MODE TOGGLE (GRID VS LIST) & LAYOUTS
+   ======================================================== */
+
+.view-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: #f3f4f6;
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    gap: 2px;
+}
+
+.btn-view-mode {
+    background: transparent;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-view-mode:hover {
+    color: var(--secondary-color);
+}
+
+.btn-view-mode.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* List Mode Container & Cards */
+.posts-container.view-mode-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.post-card-list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 12px 16px;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.post-card-list:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #d1d5db;
+}
+
+.list-card-left {
+    flex-shrink: 0;
+    width: 100px;
+    height: 75px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.list-thumb-image-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.list-thumb-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.list-thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 1.5rem;
+    background: #f9fafb;
+}
+
+.list-card-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.list-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+}
+
+.list-meta-row .post-author {
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.post-card-list .post-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.post-card-list .post-excerpt {
+    font-size: 0.82rem;
+    color: #4b5563;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.post-card-list .post-tags {
+    margin-top: 2px;
+}
+
+.list-card-right {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 150px;
+}
+
+.list-payout-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.list-payout-date .post-payout {
+    font-weight: 700;
+    color: #059669;
+    font-size: 0.95rem;
+}
+
+.list-payout-date .post-date {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* Grid Mode Image Banner */
+.post-banner-image-wrapper {
+    width: 100%;
+    height: 140px;
+    overflow: hidden;
+    background: #f3f4f6;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.post-banner-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.post-card-grid:hover .post-banner-image {
+    transform: scale(1.03);
+}
+
+.detail-preview-image-wrapper {
+    width: 100%;
+    max-height: 280px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #1e1e24;
+    margin-bottom: 12px;
+}
+
+.detail-preview-image {
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    display: block;
+}
+
+/* ========================================================
+   HIVE AUTHOR REPUTATION BADGES & CACHE
+   ======================================================== */
+
+.post-author-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.author-rep-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    vertical-align: middle;
+}
+
+.author-reputation-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    transition: all 0.2s;
+}
+
+/* Reputação Alta (>= 70) */
+.rep-high {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+/* Reputação Normal (50 - 69) */
+.rep-normal {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+/* Reputação Baixa (25 - 49) */
+.rep-low {
+    background-color: #fefce8;
+    color: #854d0e;
+    border: 1px solid #fef08a;
+}
+
+/* Reputação Alerta / Negativa (< 25) */
+.rep-warning {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-weight: 800;
+}
+
+.rep-loading {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+}
+
+.btn-refresh-rep {
+    background: transparent;
+    border: none;
+    padding: 1px 4px;
+    font-size: 0.68rem;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-refresh-rep:hover {
+    color: var(--secondary-color);
+    background: #f3f4f6;
+}
+
+.btn-refresh-rep.spinning i {
+    animation: spin 0.6s linear infinite;
+    color: #3b82f6;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========================================================
+   DOWNVOTE BUTTON & MODAL
+   ======================================================== */
+
+.downvote-post-btn {
+    color: #ef4444;
+}
+
+.downvote-post-btn:hover {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.downvote-post-btn.active-downvote {
+    background-color: #ef4444;
+    color: white;
+}
+
+.post-downvoted {
+    border-left: 3px solid #ef4444 !important;
+}
+
+.downvote-target-info {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dv-target-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.dv-label {
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.dv-value {
+    color: #1f2937;
+}
+
+.dv-truncate {
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dv-payout {
+    color: #059669;
+}
+
+.badge-downvote-weight {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.weight-slider {
+    width: 100%;
+    accent-color: #ef4444;
+    cursor: pointer;
+    margin: 8px 0;
+}
+
+.weight-presets {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.btn-weight-preset {
+    flex: 1;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    padding: 5px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-weight-preset:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.downvote-info-note {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    color: #92400e;
+    line-height: 1.4;
+    margin-top: 14px;
+}
+
+/* ========================================================
+   DARK THEME COMPATIBILITY
+   ======================================================== */
+
+.theme-dark .view-mode-toggle {
+    background: #2b2b2b;
+    border-color: #404040;
+}
+
+.theme-dark .btn-view-mode {
+    color: #9ca3af;
+}
+
+.theme-dark .btn-view-mode.active {
+    background: #3d3d3d;
+    color: white;
+}
+
+.theme-dark .post-card-list {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.theme-dark .post-card-list .post-title {
+    color: #f3f4f6;
+}
+
+.theme-dark .post-card-list .post-excerpt {
+    color: #9ca3af;
+}
+
+.theme-dark .list-card-left {
+    background: #1f1f1f;
+}
+
+.theme-dark .list-thumb-placeholder {
+    background: #1f1f1f;
+    color: #6b7280;
+}
+
+.theme-dark .downvote-target-info {
+    background: #2b2b2b;
+    border-color: #404040;
+}
+
+.theme-dark .dv-value {
+    color: #f3f4f6;
+}
+
+.theme-dark .btn-weight-preset {
+    background: #3d3d3d;
+    border-color: #525252;
+    color: #d1d5db;
+}
+
+.theme-dark .downvote-info-note {
+    background: #78350f;
+    border-color: #d97706;
+    color: #fef3c7;
+}
+
+.theme-dark .rep-high {
+    background-color: #064e3b;
+    color: #a7f3d0;
+    border-color: #059669;
+}
+
+.theme-dark .rep-normal {
+    background-color: #1e3a8a;
+    color: #bfdbfe;
+    border-color: #2563eb;
+}
+
+.theme-dark .rep-low {
+    background-color: #713f12;
+    color: #fef08a;
+    border-color: #ca8a04;
+}
+
+.theme-dark .rep-warning {
+    background-color: #7f1d1d;
+    color: #fecaca;
+    border-color: #dc2626;
+}
+
+/* ==========================================================================
+   FLAIR & INDICADORES DE BLACKLIST ON-CHAIN (bridge.get_follow_list)
+   ========================================================================== */
+
+.badge-blacklisted-flair {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+    background-color: #b91c1c;
+    border: 1px solid #991b1b;
+    border-radius: 4px;
+    padding: 2px 7px;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(185, 28, 28, 0.2);
+    text-transform: uppercase;
+    animation: fadeInFlair 0.25s ease-in;
+}
+
+.badge-blacklisted-flair i {
+    font-size: 0.65rem;
+}
+
+@keyframes fadeInFlair {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.post-card.is-blacklisted-card {
+    border-color: #f87171 !important;
+    background-color: #fffafb;
+    position: relative;
+}
+
+.post-card.is-blacklisted-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background-color: #dc2626;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.btn-blacklist-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-blacklist-pill:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #991b1b;
+}
+
+.btn-blacklist-pill i {
+    color: #dc2626;
+    font-size: 0.9rem;
+}
+
+.badge-count-pill {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+.blacklist-detail-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin-bottom: 1.2rem;
+    background-color: #fef2f2;
+    border: 1px solid #f87171;
+    border-radius: 6px;
+    color: #991b1b;
+    font-size: 0.9rem;
+}
+
+.blacklist-detail-alert i {
+    font-size: 1.25rem;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+
+/* Dark theme for Blacklist indicators */
+.theme-dark .badge-blacklisted-flair {
+    background-color: #7f1d1d;
+    border-color: #ef4444;
+    color: #fee2e2;
+}
+
+.theme-dark .post-card.is-blacklisted-card {
+    background-color: #241416;
+    border-color: #991b1b !important;
+}
+
+.theme-dark .btn-blacklist-pill {
+    background: #262626;
+    border-color: #404040;
+    color: #e5e7eb;
+}
+
+.theme-dark .btn-blacklist-pill:hover {
+    background: #3f1d22;
+    border-color: #ef4444;
+    color: #fecaca;
+}
+
+.theme-dark .blacklist-detail-alert {
+    background-color: #3f1d22;
+    border-color: #991b1b;
+    color: #fecaca;
+}
+
+/* ==========================================================================
+   Hybrid Sync & Reputation System Styles
+   ========================================================================== */
+
+#reputationFilter {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#reputationFilter:hover,
+#reputationFilter:focus {
+    border-color: #3b82f6;
+    outline: none;
+}
+
+.theme-dark #reputationFilter {
+    background-color: #262626;
+    border-color: #404040;
+    color: #e5e7eb;
+}
+
+.theme-dark #reputationFilter:hover,
+.theme-dark #reputationFilter:focus {
+    border-color: #60a5fa;
+}
+
+/* Modal de Sincronização Híbrida */
+.hybrid-sync-modal-box {
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+.theme-dark .sync-card {
+    background-color: #262626 !important;
+    border-color: #404040 !important;
+    color: #e5e7eb;
+}
+
+.theme-dark .sync-card code {
+    background-color: #333333;
+    color: #93c5fd;
+}
+
+.theme-dark .sync-card p,
+.theme-dark .sync-card #repCacheStatsText {
+    color: #9ca3af !important;
+}
+
+.theme-dark .sync-card > div[style*="background: var(--bg-primary"] {
+    background-color: #1f1f1f !important;
+    border-color: #374151 !important;
+}
+
+

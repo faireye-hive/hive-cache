@@ -1,14 +1,39 @@
 // src/ui/domHelpers.js
 
-import { moderationSettings, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter,getSortCriteria } from '../config.js';
+import { moderationSettings, allPosts, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter, getSortCriteria, getAppFilter, setAppFilter, getViewMode, setViewMode, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from '../config.js';
 import { isUserMuted, muteUser, unmuteUser } from '../moderation/muting.js';
-import { calculateRiskLevel, formatDate, escapeHTML } from '../utils/helpers.js';
+import { calculateRiskLevel, formatDate, escapeHTML, extractPostApp, normalizeAppName } from '../utils/helpers.js';
 import { showPostDetail, openModerationPanel } from './modals.js';
 import { toggleFlagPost } from '../moderation/flagging.js';
+import { showNotification } from './notifications.js';
+import { openOnchainBlacklistModal } from './onchainBlacklistModal.js';
+import { createSafeImagePreviewHtml } from '../utils/imageProxy.js';
+import { renderAuthorReputationHtml, queueReputationFetch, handleManualReputationRefresh, getCachedReputation } from '../api/reputationService.js';
+import { openDownvoteModal } from './downvoteModal.js';
+import { isAccountOnchainBlacklisted, getAccountBlacklistDetails } from '../api/onchainBlacklistService.js';
 
 // Mova updatePostsDisplay para cá (apenas a função wrapper)
 export function updatePostsDisplay() {
   refreshPostsDisplay();
+}
+
+/**
+ * Inicializa a alternância entre Grid e List
+ */
+export function initViewModeToggle() {
+  const gridBtn = document.getElementById("viewModeGrid");
+  const listBtn = document.getElementById("viewModeList");
+
+  if (gridBtn && listBtn) {
+    gridBtn.addEventListener("click", () => {
+      setViewMode("grid");
+      refreshPostsDisplay();
+    });
+    listBtn.addEventListener("click", () => {
+      setViewMode("list");
+      refreshPostsDisplay();
+    });
+  }
 }
 
 // Mova refreshPostsDisplay para cá (e renomeie a chamada para toggleFlagPost)
@@ -26,9 +51,38 @@ export function refreshPostsDisplay() {
     // parent_author existe para comentários
     postsToShow = postsToShow.filter(post => post.parent_author);
   }
+
+  // B. APLICAR FILTRO DE APP
+  const currentAppFilter = getAppFilter();
+  if (currentAppFilter && currentAppFilter !== 'all') {
+    postsToShow = postsToShow.filter(post => {
+      const rawApp = extractPostApp(post);
+      const normApp = normalizeAppName(rawApp);
+      return normApp === currentAppFilter || rawApp.toLowerCase() === currentAppFilter;
+    });
+  }
   
-  // B. APLICAR FILTRO DE MUTADOS
+  // C. APLICAR FILTRO DE MUTADOS
   postsToShow = postsToShow.filter((post) => !isUserMuted(post.author));
+  
+  // D. APLICAR FILTRO DE BLACKLIST ON-CHAIN
+  const currentBlacklistFilter = getBlacklistFilter();
+  if (currentBlacklistFilter === 'hide-blacklisted') {
+    postsToShow = postsToShow.filter((post) => !isAccountOnchainBlacklisted(post.author));
+  } else if (currentBlacklistFilter === 'only-blacklisted') {
+    postsToShow = postsToShow.filter((post) => isAccountOnchainBlacklisted(post.author));
+  }
+
+  // E. APLICAR FILTRO DE REPUTAÇÃO MÁXIMA (Ocultar usuários com reputação maior que o limite selecionado)
+  const maxRep = getMaxReputationFilter();
+  if (maxRep !== null && !isNaN(maxRep)) {
+    postsToShow = postsToShow.filter((post) => {
+      const rep = getCachedReputation(post.author) ?? (typeof post.author_reputation === 'number' ? post.author_reputation : null);
+      // Se não estiver no cache ainda, assume reputação 25 (padrão de nova conta Hive)
+      const score = rep !== null ? rep : 25;
+      return score <= maxRep;
+    });
+  }
   
   
   // C. APLICAR ORDENAÇÃO (NOVA LÓGICA OTIMIZADA)
@@ -68,6 +122,19 @@ export function refreshPostsDisplay() {
   const container = document.getElementById("postsContainer");
   const pageInfo = document.getElementById("pageInfo");
 
+  const currentViewMode = getViewMode();
+  if (container) {
+    container.className = currentViewMode === "list" ? "posts-container view-mode-list" : "posts-container view-mode-grid";
+  }
+
+  // Atualiza botões de toggle
+  const gridBtn = document.getElementById("viewModeGrid");
+  const listBtn = document.getElementById("viewModeList");
+  if (gridBtn && listBtn) {
+    gridBtn.classList.toggle("active", currentViewMode === "grid");
+    listBtn.classList.toggle("active", currentViewMode === "list");
+  }
+
   if (postsToShow.length === 0) {
     container.innerHTML = '<div class="no-posts">Nenhum post encontrado</div>';
     pageInfo.textContent = "Página 0 de 0";
@@ -92,19 +159,26 @@ export function refreshPostsDisplay() {
 
   container.innerHTML = "";
   pagePosts.forEach((post) => {
-    const postElement = createPostCard(post);
+    const postElement = createPostCard(post, currentViewMode);
     container.appendChild(postElement);
   });
+
+  // Dispara busca e cache de reputação assíncrona para autores visíveis
+  const visibleAuthors = pagePosts.map((p) => p.author);
+  queueReputationFetch(visibleAuthors);
 
   document.getElementById("prevPage").disabled = currentPage === 1;
   document.getElementById("nextPage").disabled = currentPage === totalPages;
 }
 
 // Mova createPostCard para cá
-export function createPostCard(post) {
+export function createPostCard(post, viewMode = "grid") {
     const div = document.createElement("div");
-    div.className = "post-card";
+    const isBlacklisted = isAccountOnchainBlacklisted(post.author);
+    const blacklistClass = isBlacklisted ? "is-blacklisted-card" : "";
+    div.className = `post-card ${blacklistClass} ${viewMode === "list" ? "post-card-list" : "post-card-grid"}`;
     div.dataset.id = post.id;
+    div.dataset.author = post.author;
 
     const isFlagged = flaggedPosts[post.id];
     const flagClass = isFlagged ? "flagged" : "";
@@ -112,26 +186,107 @@ export function createPostCard(post) {
     const payoutValue = parseFloat(post.pending_payout_value || 0);
 
     const title = escapeHTML(post.title) || "";
-    const shortTitle = title.length > 50 ? title.substring(0, 50) + "..." : title;
+    const titleLimit = viewMode === "list" ? 75 : 50;
+    const shortTitle = title.length > titleLimit ? title.substring(0, titleLimit) + "..." : title;
+    
     const content = escapeHTML(post.body) || "Sem conteúdo";
+    const contentLimit = viewMode === "list" ? 220 : 150;
     const shortContent =
-        content.length > 150 ? content.substring(0, 150) + "..." : content;
+        content.length > contentLimit ? content.substring(0, contentLimit) + "..." : content;
 
     let tagsHtml = "";
     if (post.tags) {
-        // ... tags logic ...
         const tagArray = Array.isArray(post.tags)
             ? post.tags.slice(0, 3)
             : post.tags.split(",").slice(0, 3);
 
         tagsHtml = tagArray
-            .map((tag) => `<span class="post-tag">${tag.trim()}</span>`)
+            .map((tag) => `<span class="post-tag">${escapeHTML(tag.trim())}</span>`)
             .join("");
     }
 
-    div.innerHTML = `
+    const rawApp = extractPostApp(post);
+    const normApp = normalizeAppName(rawApp);
+    const appTooltip = normApp !== "desconhecido" ? `Filtrar posts por ${normApp}` : "App desconhecido";
+
+    // Preview seguro de imagem via Proxy oficial da Hive
+    const imageHtml = createSafeImagePreviewHtml(post, {
+      width: viewMode === "list" ? 140 : 480,
+      height: viewMode === "list" ? 100 : 0,
+      className: viewMode === "list" ? "list-thumb-image" : "post-banner-image",
+    });
+
+    // Badge de Reputação com botão de atualização manual
+    const authorRepHtml = renderAuthorReputationHtml(post.author, post.author_reputation);
+
+    // Flair de Blacklist On-Chain com indicação da origem e motivo (blacklist_description)
+    let blacklistFlairHtml = '';
+    if (isBlacklisted) {
+      const blDetails = getAccountBlacklistDetails(post.author);
+      if (blDetails && blDetails.source === 'followed') {
+        const titleText = `Blacklist de @${blDetails.sourceOwner}${blDetails.description ? ': ' + blDetails.description : ''}`;
+        blacklistFlairHtml = `<span class="badge-blacklisted-flair" style="background:#4338ca;border-color:#6366f1;" title="${escapeHTML(titleText)}"><i class="fas fa-ban"></i> LISTA @${escapeHTML(blDetails.sourceOwner.toUpperCase())}</span>`;
+      } else {
+        const desc = blDetails?.description ? `: ${blDetails.description}` : '';
+        const titleText = `Blacklist Pessoal On-Chain${desc}`;
+        blacklistFlairHtml = `<span class="badge-blacklisted-flair" title="${escapeHTML(titleText)}"><i class="fas fa-ban"></i> BLACKLISTED</span>`;
+      }
+    }
+
+    if (viewMode === "list") {
+      div.innerHTML = `
+        <div class="list-card-left">
+          ${imageHtml || '<div class="list-thumb-placeholder"><i class="fas fa-file-alt"></i></div>'}
+        </div>
+        <div class="list-card-center">
+          <div class="list-meta-row">
+            <span class="post-author">@${escapeHTML(post.author)}</span>
+            ${authorRepHtml}
+            ${blacklistFlairHtml}
+            ${post.parent_author ? '<span class="post-type">Comentário</span>' : '<span class="post-type">Post</span>'}
+            <span class="post-app" data-app="${escapeHTML(normApp)}" title="${escapeHTML(appTooltip)}">
+              <i class="fas fa-cube"></i> ${escapeHTML(rawApp || "Desconhecido")}
+            </span>
+            <div class="risk-badge risk-${riskLevel}">${riskLevel.toUpperCase()}</div>
+          </div>
+          <h3 class="post-title">${shortTitle || '<span style="color:#9ca3af;font-style:italic;">Sem título</span>'}</h3>
+          <p class="post-excerpt">${shortContent}</p>
+          <div class="post-tags">${tagsHtml}</div>
+        </div>
+        <div class="list-card-right">
+          <div class="list-payout-date">
+            <span class="post-payout">$${payoutValue.toFixed(2)}</span>
+            <span class="post-date">${formatDate(post.created)}</span>
+          </div>
+          <div class="post-actions">
+            <button class="btn-icon view-post" title="Ver detalhes">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn-icon downvote-post-btn" title="Dar Downvote na Blockchain (Hive Keychain)">
+              <i class="fas fa-arrow-down"></i>
+            </button>
+            <button class="btn-icon flag-post ${flagClass}" title="${isFlagged ? "Remover flag" : "Sinalizar"}">
+              <i class="fas fa-flag"></i>
+            </button>
+            <button class="btn-icon onchain-blacklist-btn" title="Blacklist na Blockchain (Custom JSON)">
+              <i class="fas fa-shield-virus"></i>
+            </button>
+            <button class="btn-icon moderate-post" title="Moderar Autor">
+              <i class="fas fa-user-shield"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      // Modo Grade
+      div.innerHTML = `
+        ${imageHtml}
         <div class="post-card-header ${post.parent_author ? "parented" : ""}">
-            <span class="post-author">@${post.author}</span>
+            <div class="post-author-wrapper">
+              <span class="post-author">@${escapeHTML(post.author)}</span>
+              ${authorRepHtml}
+              ${blacklistFlairHtml}
+            </div>
             ${post.parent_author ? '<span class="post-type">Comentário</span>' : '<span class="post-type">Post</span>'}
             <span class="post-payout">$${payoutValue.toFixed(2)}</span>
         </div>
@@ -140,7 +295,9 @@ export function createPostCard(post) {
             <p class="post-excerpt">${shortContent}</p>
             <div class="post-tags">${tagsHtml}</div>
             <div class="risk-badge risk-${riskLevel}">${riskLevel.toUpperCase()}</div>
-            <div class="post-app">App: ${post.json_metadata.app || "Desconhecido"}</div>
+            <div class="post-app" data-app="${escapeHTML(normApp)}" title="${escapeHTML(appTooltip)}">
+                <i class="fas fa-cube"></i> App: ${escapeHTML(rawApp || "Desconhecido")}
+            </div>
         </div>
         <div class="post-card-footer">
             <span class="post-date">${formatDate(post.created)}</span>
@@ -148,23 +305,63 @@ export function createPostCard(post) {
                 <button class="btn-icon view-post" title="Ver detalhes">
                     <i class="fas fa-eye"></i>
                 </button>
+                <button class="btn-icon downvote-post-btn" title="Dar Downvote na Blockchain (Hive Keychain)">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
                 <button class="btn-icon flag-post ${flagClass}" title="${isFlagged ? "Remover flag" : "Sinalizar"}">
                     <i class="fas fa-flag"></i>
+                </button>
+                <button class="btn-icon onchain-blacklist-btn" title="Blacklist na Blockchain (Custom JSON)">
+                    <i class="fas fa-shield-virus"></i>
                 </button>
                 <button class="btn-icon moderate-post" title="Moderar">
                     <i class="fas fa-user-shield"></i>
                 </button>
             </div>
         </div>
-    `;
+      `;
+    }
+
+    const appBadge = div.querySelector(".post-app");
+    if (appBadge && normApp && normApp !== "desconhecido") {
+      appBadge.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectAppFilter(normApp);
+      });
+    }
 
     const viewBtn = div.querySelector(".view-post");
     const flagBtn = div.querySelector(".flag-post");
     const modBtn = div.querySelector(".moderate-post");
+    const onchainBtn = div.querySelector(".onchain-blacklist-btn");
+    const downvoteBtn = div.querySelector(".downvote-post-btn");
+    const refreshRepBtn = div.querySelector(".btn-refresh-rep");
 
     if (viewBtn) viewBtn.addEventListener("click", () => showPostDetail(post));
     if (flagBtn) flagBtn.addEventListener("click", () => toggleFlagPost(post.id));
     if (modBtn) modBtn.addEventListener("click", () => openModerationPanel(post));
+    if (downvoteBtn) {
+      downvoteBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDownvoteModal(post);
+      });
+    }
+    if (refreshRepBtn) {
+      refreshRepBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        handleManualReputationRefresh(post.author, refreshRepBtn);
+      });
+    }
+    if (onchainBtn) {
+      onchainBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openOnchainBlacklistModal(post.author, {
+          reason: riskLevel === "high" ? "Spam / Abuso Detectado" : "Violação de Regras",
+          severity: riskLevel === "high" ? "high" : "medium",
+          notes: `Post: "${post.title || post.id}" (${riskLevel.toUpperCase()} risco)`,
+        });
+      });
+    }
 
     const muteBtn = document.createElement("button");
     const isMuted = isUserMuted(post.author);
@@ -179,7 +376,6 @@ export function createPostCard(post) {
         } else {
             muteUser(post.author);
         }
-        // Após mutar/desmutar, o botão é atualizado pelo refreshPostsDisplay (via muteUser/unmuteUser)
     });
 
     const actionsContainer = div.querySelector(".post-actions");
@@ -235,4 +431,72 @@ export function loadChartJS() {
 
     document.head.appendChild(script);
   });
+}
+
+// Seleciona um app específico e filtra a listagem
+export function selectAppFilter(appName) {
+  setAppFilter(appName);
+
+  const appSelect = document.getElementById("appFilter");
+  if (appSelect) {
+    appSelect.value = appName;
+    if (appSelect.value !== appName) {
+      const opt = document.createElement("option");
+      opt.value = appName;
+      opt.textContent = appName;
+      appSelect.appendChild(opt);
+      appSelect.value = appName;
+    }
+  }
+
+  // Navega para a aba de posts se estiver em outra
+  const postsNavBtn = document.querySelector('.nav-item[data-section="posts-section"]');
+  if (postsNavBtn && !postsNavBtn.classList.contains("active")) {
+    postsNavBtn.click();
+  }
+
+  setCurrentPage(1);
+  refreshPostsDisplay();
+  showNotification(
+    appName === "all" ? "Exibindo todos os apps" : `Filtrando posts pelo aplicativo: ${appName}`,
+    "info"
+  );
+}
+
+// Popula dinamicamente o dropdown de seleção de apps com contagens reais
+export function updateAppFilterDropdown() {
+  const appSelect = document.getElementById("appFilter");
+  if (!appSelect) return;
+
+  const currentSelected = getAppFilter();
+  const appCounts = {};
+
+  allPosts.forEach((post) => {
+    const raw = extractPostApp(post);
+    const norm = normalizeAppName(raw);
+    appCounts[norm] = (appCounts[norm] || 0) + 1;
+  });
+
+  const sortedApps = Object.entries(appCounts).sort((a, b) => b[1] - a[1]);
+
+  appSelect.innerHTML = "";
+  
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = `Todos os Apps (${allPosts.length.toLocaleString('pt-BR')})`;
+  appSelect.appendChild(allOption);
+
+  sortedApps.forEach(([appName, count]) => {
+    const opt = document.createElement("option");
+    opt.value = appName;
+    opt.textContent = `${appName} (${count.toLocaleString('pt-BR')})`;
+    appSelect.appendChild(opt);
+  });
+
+  if (currentSelected && (currentSelected === "all" || appCounts[currentSelected])) {
+    appSelect.value = currentSelected;
+  } else {
+    appSelect.value = "all";
+    setAppFilter("all");
+  }
 }

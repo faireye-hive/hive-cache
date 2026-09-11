@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hive Moderation Dashboard</title>
+    <meta name="description" content="Dashboard for monitoring, analyzing, and moderating Hive blockchain posts and comments with risk analysis and statistics" />
+    <meta property="og:title" content="Hive Moderation Dashboard" />
+    <meta property="og:description" content="Dashboard for monitoring, analyzing, and moderating Hive blockchain posts and comments with risk analysis and statistics" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -15,35 +18,57 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Sistema de Login -->
+    <!-- Sistema de Login com Hive Keychain -->
     <div id="loginModal" class="modal">
-      <div class="modal-content">
-        <h2><i class="fas fa-user-shield"></i> Login de Moderação</h2>
-        <div class="login-options">
-          <button id="hiveKeychainLogin" class="btn-login">
-            <i class="fas fa-key"></i> Login com Hive Keychain
+      <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-header" style="padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="margin: 0; font-size: 1.25rem;"><i class="fas fa-key" style="color: var(--primary-color);"></i> Autenticação Hive Keychain</h2>
+          <span class="close-modal" id="closeLoginModalBtn" title="Fechar">&times;</span>
+        </div>
+
+        <div id="keychainStatusInfo" class="keychain-status-box"></div>
+
+        <div class="login-keychain-card">
+          <div class="form-group">
+            <label for="keychainUsername"><i class="fas fa-at"></i> Nome de Usuário Hive</label>
+            <input
+              type="text"
+              id="keychainUsername"
+              placeholder="ex: seu_usuario_hive"
+              class="form-input"
+              autocomplete="username"
+            />
+          </div>
+          <button id="btnSubmitKeychain" class="btn-primary btn-full-width" style="padding: 0.75rem; font-size: 1rem; font-weight: 600;">
+            <i class="fas fa-shield-alt"></i> Entrar com Hive Keychain
           </button>
-          <button id="manualLogin" class="btn-login">
-            <i class="fas fa-user"></i> Login Manual
+        </div>
+
+        <div class="login-divider"><span>OU</span></div>
+
+        <div class="login-secondary-actions">
+          <button id="guestLoginBtn" class="btn-action btn-full-width" style="margin-bottom: 8px;">
+            <i class="fas fa-eye"></i> Continuar como Visitante (Somente Leitura)
           </button>
-          <div id="manualLoginForm" class="hidden">
+          
+          <button id="manualLogin" class="btn-link-action">
+            <i class="fas fa-terminal"></i> Modo Manual Alternativo
+          </button>
+
+          <div id="manualLoginForm" class="hidden" style="margin-top: 10px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
             <input
               type="text"
               id="username"
-              placeholder="Nome de usuário"
+              placeholder="Nome de usuário manual"
               class="form-input"
+              style="margin-bottom: 8px;"
             />
-            <input
-              type="password"
-              id="password"
-              placeholder="Chave de postagem"
-              class="form-input"
-            />
-            <button id="submitManualLogin" class="btn-primary">Entrar</button>
+            <button id="submitManualLogin" class="btn-secondary btn-full-width">Entrar como Moderador</button>
           </div>
         </div>
-        <p class="note">
-          * Apenas moderadores autorizados podem acessar este painel
+
+        <p class="note" style="margin-top: 1rem; font-size: 0.8rem; color: #6b7280; text-align: center;">
+          * A assinatura via Hive Keychain é segura e não expõe sua chave privada.
         </p>
       </div>
     </div>
@@ -55,14 +80,28 @@
         <h1>Hive Moderation Dashboard</h1>
       </div>
       <div class="nav-user" id="userInfo">
-        <span id="currentUser">Não logado</span>
+        <button id="navBlacklistBtn" class="btn-action btn-blacklist-nav" title="Gerenciar Blacklist na Hive Blockchain (Custom JSON)">
+          <i class="fas fa-shield-virus"></i> Blacklist On-Chain
+        </button>
 
-        <!-- Botão de Configurações (novo) -->
+        <div class="user-profile-badge" id="userProfileBadge">
+          <img id="userAvatarImg" class="user-avatar hidden" src="" alt="Avatar" />
+          <span id="currentUser">Não conectado</span>
+          <span id="keychainBadge" class="badge-keychain hidden" title="Autenticado com Hive Keychain">
+            <i class="fas fa-check-circle"></i> Keychain
+          </span>
+        </div>
+
+        <button id="openLoginNavBtn" class="btn-action btn-login-nav" title="Conectar Hive Keychain">
+          <i class="fas fa-key"></i> Conectar
+        </button>
+
+        <!-- Botão de Configurações -->
         <button id="settingsBtn" class="btn-icon" title="Configurações">
           <i class="fas fa-cog"></i>
         </button>
 
-        <button id="logoutBtn" class="btn-logout hidden">
+        <button id="logoutBtn" class="btn-logout hidden" title="Sair da conta">
           <i class="fas fa-sign-out-alt"></i> Sair
         </button>
       </div>
@@ -83,10 +122,35 @@
           <option value="title">Título</option>
           <option value="content">Conteúdo</option>
           <option value="tags">Tags</option>
+          <option value="app">App</option>
         </select>
       </div>
       <div class="toolbar-actions">
-        <button id="refreshBtn" class="btn-action">
+        <button
+          id="syncRpcBtn"
+          class="btn-action"
+          style="background-color: #2980b9;"
+          title="Sincronizar posts mais recentes diretamente via Hive RPC (Sem HAFSQL, rápido e salva no cache)"
+        >
+          <i class="fas fa-bolt"></i> Sincronizar (Sem HAFSQL)
+        </button>
+        <button
+          id="syncBlockchainBtn"
+          class="btn-action"
+          style="background-color: #27ae60;"
+          title="Baixar posts e comentários reais mais recentes diretamente da Hive Blockchain (HAFSQL)"
+        >
+          <i class="fas fa-cloud-download-alt"></i> Atualizar Tudo (HAFSQL)
+        </button>
+        <button
+          id="hybridSyncBtn"
+          class="btn-action"
+          style="background-color: #8e44ad;"
+          title="Abrir painel de Sincronização Híbrida e Gerenciamento de Cache de Reputações"
+        >
+          <i class="fas fa-layer-group"></i> Sincronização Híbrida
+        </button>
+        <button id="refreshBtn" class="btn-action" title="Recarregar posts do cache">
           <i class="fas fa-sync-alt"></i> Atualizar
         </button>
         <button id="cacheStatsBtn" class="btn-action">
@@ -161,6 +225,12 @@
           <h3><i class="fas fa-chart-line"></i> Status do Sistema</h3>
           <div class="status-info">
             <div class="status-item">
+              <span class="status-label">Fonte:</span>
+              <span id="dataSourceBadge" class="status-value" style="color: #27ae60; font-weight: bold;">
+                <i class="fas fa-link"></i> Hive HAFSQL (Real)
+              </span>
+            </div>
+            <div class="status-item">
               <span class="status-label">Posts em Cache:</span>
               <span id="cacheCount" class="status-value">0</span>
             </div>
@@ -196,11 +266,46 @@
                 <option value="risk-desc">Maior Risco</option>
               </select>
 
-                                <select id="postTypeFilter">
-  <option value="all">Todos os Posts</option>
-  <option value="only-posts">Apenas Posts Originais</option>
-  <option value="only-comments">Apenas Comentários</option>
-</select>
+              <select id="postTypeFilter">
+                <option value="all">Todos os Posts</option>
+                <option value="only-posts">Apenas Posts Originais</option>
+                <option value="only-comments">Apenas Comentários</option>
+              </select>
+
+              <select id="appFilter" title="Filtrar por aplicativo (app)">
+                <option value="all">Todos os Apps</option>
+              </select>
+
+              <select id="blacklistFilter" title="Filtrar por status de Blacklist On-Chain">
+                <option value="hide-blacklisted" selected>Ocultar Blacklisted</option>
+                <option value="all">Mostrar Todos (Inc. Blacklist)</option>
+                <option value="only-blacklisted">Apenas Blacklisted</option>
+              </select>
+
+              <select id="reputationFilter" title="Ocultar autores com reputação maior que o limite selecionado (filtra novos abusadores)">
+                <option value="all" selected>Reputação: Todas</option>
+                <option value="25">Ocultar Rep &gt; 25 (≤ 25)</option>
+                <option value="35">Ocultar Rep &gt; 35 (≤ 35)</option>
+                <option value="45">Ocultar Rep &gt; 45 (≤ 45)</option>
+                <option value="55">Ocultar Rep &gt; 55 (≤ 55)</option>
+                <option value="65">Ocultar Rep &gt; 65 (≤ 65)</option>
+                <option value="custom">Personalizado...</option>
+              </select>
+
+              <button type="button" id="btnHeaderBlacklistSync" class="btn-blacklist-pill" title="Sincronizar e ver Blacklist On-Chain (bridge.get_follow_list)">
+                <i class="fas fa-shield-virus"></i>
+                <span id="headerBlacklistCountBadge" class="badge-count-pill">0</span>
+              </button>
+
+              <div class="view-mode-toggle" id="viewModeToggleGroup">
+                <button type="button" id="viewModeGrid" class="btn-view-mode active" title="Visualização em Grade">
+                  <i class="fas fa-th-large"></i>
+                </button>
+                <button type="button" id="viewModeList" class="btn-view-mode" title="Visualização em Lista">
+                  <i class="fas fa-bars"></i>
+                </button>
+              </div>
+
               <div class="pagination">
                 <button id="prevPage" class="btn-pagination">
                   <i class="fas fa-chevron-left"></i>
@@ -437,6 +542,14 @@
                     placeholder="hive, blog, crypto"
                   />
                 </div>
+                <div class="form-group">
+                  <label for="searchApp">Aplicativo (App)</label>
+                  <input
+                    type="text"
+                    id="searchApp"
+                    placeholder="ex: peakd, ecency, leothreads"
+                  />
+                </div>
               </div>
 
               <div class="form-row">
@@ -664,6 +777,200 @@
           <button class="btn-primary" onclick="closeModal('mutedUsersModal')">
             Fechar
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Blacklist On-Chain (Hive Blockchain Custom JSON) -->
+    <div id="onchainBlacklistModal" class="modal hidden">
+      <div class="modal-content" style="max-width: 680px;">
+        <div class="modal-header">
+          <h2><i class="fas fa-shield-virus" style="color: #8b5cf6;"></i> Blacklist na Hive Blockchain</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-tabs">
+          <button class="modal-tab active" id="tabBlacklistBroadcast">
+            <i class="fas fa-broadcast-tower"></i> Transmitir Blacklist
+          </button>
+          <button class="modal-tab" id="tabBlacklistPersonal">
+            <i class="fas fa-user-shield"></i> Minha Blacklist (<span id="historyAccountsCount">0</span>)
+          </button>
+          <button class="modal-tab" id="tabBlacklistFollowed">
+            <i class="fas fa-users-slash"></i> Blacklists Seguidas (<span id="followedListsCountBadge">0</span>)
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Aba 1: Transmissão -->
+          <div id="blacklistBroadcastContent">
+            <div id="blacklistAuthWarning"></div>
+
+            <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="blacklistTargetUser"><strong>Conta Alvo (@username) *</strong></label>
+                <input type="text" id="blacklistTargetUser" placeholder="ex: spammer123" class="form-input" />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="blacklistSeverity"><strong>Gravidade</strong></label>
+                <select id="blacklistSeverity" class="form-input">
+                  <option value="high" selected>Alta (Crítica)</option>
+                  <option value="medium">Média</option>
+                  <option value="low">Baixa / Alerta</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 12px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="blacklistReason"><strong>Motivo / Razão On-Chain (blacklist_description) *</strong></label>
+                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Gravado como a razão pública da moderação na Hive blockchain.</small>
+                <select id="blacklistReason" class="form-input">
+                  <option value="Spam / Flood de Posts" selected>Spam / Flood de Posts</option>
+                  <option value="Phishing / Golpe / Link Malicioso">Phishing / Golpe / Link Malicioso</option>
+                  <option value="Plágio / Violação de Direitos">Plágio / Violação de Direitos</option>
+                  <option value="Abuso de Recompensas / Farming">Abuso de Recompensas / Farming</option>
+                  <option value="Conteúdo Tóxico / Assédio">Conteúdo Tóxico / Assédio</option>
+                  <option value="Fazenda de Contas Falsas (Sybil)">Fazenda de Contas Falsas (Sybil)</option>
+                  <option value="Outro">Outro (especificar)</option>
+                </select>
+                <input type="text" id="blacklistCustomReason" placeholder="Descreva a razão específica..." class="form-input hidden" style="margin-top: 6px;" />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="blacklistProtocol"><strong>Protocolo Blockchain *</strong></label>
+                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Padrão Hive salva blacklist_description no follow.</small>
+                <select id="blacklistProtocol" class="form-input">
+                  <option value="follow" selected>Padrão Hive (follow: blacklist)</option>
+                  <option value="both">Dual: Padrão Hive + Custom JSON</option>
+                  <option value="hive_moderation">Custom JSON de Moderação (hive_moderation)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label for="blacklistNotes"><strong>Notas e Evidências (Opcional)</strong></label>
+              <textarea id="blacklistNotes" rows="2" class="form-input" placeholder="Justificativa adicional, links de posts com provas para outros moderadores..."></textarea>
+            </div>
+
+            <div class="json-preview-container">
+              <div class="json-preview-header">
+                <span><i class="fas fa-code"></i> Prévia da Operação Custom JSON (Hive Keychain)</span>
+                <span class="preview-badge">Posting Auth</span>
+              </div>
+              <pre id="blacklistJsonPreview" class="json-preview-code"></pre>
+            </div>
+
+            <div class="modal-footer" style="padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" class="btn-action btn-close-blacklist">Cancelar</button>
+              <button type="button" id="submitBlacklistBroadcast" class="btn-primary btn-transmit-onchain">
+                <i class="fas fa-shield-alt"></i> Transmitir para Blockchain via Keychain
+              </button>
+            </div>
+          </div>
+
+          <!-- Aba 2: Minha Blacklist Pessoal -->
+          <div id="blacklistHistoryContent" class="hidden">
+            <div class="history-sync-bar" style="display: flex; gap: 8px; align-items: center; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 12px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 220px; display: flex; align-items: center; gap: 6px;">
+                <label for="blacklistObserverInput" style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; margin: 0;">Observador:</label>
+                <input type="text" id="blacklistObserverInput" class="form-input" placeholder="ex: sm-silva ou seu_usuario" style="padding: 4px 8px; font-size: 0.85rem;" />
+              </div>
+              <button id="btnSyncFromBridgeApi" class="btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-sync-alt"></i> Sincronizar (bridge.get_follow_list)
+              </button>
+            </div>
+
+            <div class="history-header-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.85rem; color: #4b5563;">
+                Contas na sua Blacklist Pessoal (<strong id="personalAccountsCount">0</strong>):
+              </span>
+              <input type="text" id="blacklistHistorySearch" placeholder="Filtrar contas..." class="form-input" style="max-width: 200px; padding: 3px 8px; font-size: 0.8rem;" />
+            </div>
+
+            <div id="onchainBlacklistHistoryList" class="blacklist-history-list" style="max-height: 340px; overflow-y: auto;"></div>
+          </div>
+
+          <!-- Aba 3: Blacklists Seguidas (Subscritas) -->
+          <div id="blacklistFollowedContent" class="hidden">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                  <i class="fas fa-layer-group" style="color: #6366f1;"></i> Listas de Moderação Seguidas
+                </div>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #475569; cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="toggleIncludeFollowed" checked style="cursor: pointer;" />
+                  <span>Filtrar contas das listas seguidas no painel</span>
+                </label>
+              </div>
+              <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.4;">
+                Seguir uma blacklist permite herdar moderações de projetos comunitários (ex: <code>@themarkymark</code>, <code>@faireye</code>, <code>@hive.blog</code>). Operação executada on-chain via Hive Keychain.
+              </p>
+            </div>
+
+            <!-- Formulário para seguir nova blacklist -->
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px; background: #fff; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 6px;">
+              <input type="text" id="newFollowBlacklistAccount" placeholder="Seguir blacklist de @usuario (ex: themarkymark)" class="form-input" style="font-size: 0.85rem; flex: 1; padding: 6px 10px;" />
+              <button type="button" id="btnFollowNewBlacklist" class="btn-primary" style="padding: 6px 14px; font-size: 0.85rem; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-user-plus"></i> Seguir Lista (Keychain)
+              </button>
+            </div>
+
+            <div id="followedBlacklistsContainer" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+              <!-- Cards gerados dinamicamente -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Downvote na Blockchain (Hive Keychain) -->
+    <div id="downvoteModal" class="modal hidden">
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-arrow-down" style="color: #ef4444;"></i> Dar Downvote na Blockchain</h3>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="downvoteAuthWarning"></div>
+
+          <div class="downvote-target-info">
+            <div class="dv-target-row">
+              <span class="dv-label">Autor:</span>
+              <strong id="downvotePostAuthor" class="dv-value">@author</strong>
+            </div>
+            <div class="dv-target-row">
+              <span class="dv-label">Título:</span>
+              <span id="downvotePostTitle" class="dv-value dv-truncate">Título do Post</span>
+            </div>
+            <div class="dv-target-row">
+              <span class="dv-label">Payout Pendente:</span>
+              <strong id="downvotePostPayout" class="dv-value dv-payout">$0.00</strong>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="downvoteWeightSlider"><strong>Porcentagem de Downvote (Peso)</strong></label>
+              <span id="downvoteWeightDisplay" class="badge-downvote-weight">-100%</span>
+            </div>
+            <input type="range" id="downvoteWeightSlider" min="1" max="100" value="100" step="1" class="weight-slider" />
+            <div class="weight-presets">
+              <button type="button" class="btn-weight-preset" data-weight="-100">-100%</button>
+              <button type="button" class="btn-weight-preset" data-weight="-50">-50%</button>
+              <button type="button" class="btn-weight-preset" data-weight="-25">-25%</button>
+              <button type="button" class="btn-weight-preset" data-weight="-10">-10%</button>
+              <button type="button" class="btn-weight-preset" data-weight="-5">-5%</button>
+            </div>
+          </div>
+
+          <div class="downvote-info-note">
+            <i class="fas fa-info-circle"></i> O downvote reduz o payout pendente e sinaliza conteúdo abusivo ou fraudulento para a comunidade Hive. A operação será assinada via <strong>Hive Keychain (Posting Key)</strong>.
+          </div>
+
+          <div class="modal-footer" style="padding-top: 1rem; margin-top: 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-action btn-close-downvote">Cancelar</button>
+            <button type="button" id="submitDownvoteBroadcast" class="btn-danger" style="display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fas fa-arrow-down"></i> Confirmar Downvote via Keychain
+            </button>
+          </div>
         </div>
       </div>
     </div>

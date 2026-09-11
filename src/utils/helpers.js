@@ -26,20 +26,41 @@ export function escapeHTML(body) {
   return sanitized;
 }
 
+/**
+ * Analisa e converte datas da Hive blockchain para objetos Date UTC válidos
+ * Previne datas negativas por falta de terminação UTC 'Z' e erros de timezone
+ */
+export function parseHiveDate(dateString) {
+  if (!dateString) return new Date(0);
+  if (dateString instanceof Date) return dateString;
+  let s = String(dateString).trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)) {
+    s += "Z";
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? new Date(0) : d;
+}
+
 // formatDate
 export function formatDate(dateString) {
   if (!dateString) return "N/A";
   try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Data inválida";
+    const date = parseHiveDate(dateString);
+    if (isNaN(date.getTime()) || date.getTime() === 0) return "Data inválida";
 
     const now = new Date();
-    const diffMs = now - date;
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) {
+    // Evita valores negativos por pequena discrepância de relógio entre cliente e blockchain
+    if (diffMs < 0 || diffSecs < 15) {
+      return "Agora mesmo";
+    } else if (diffSecs < 60) {
+      return `Há ${diffSecs} seg`;
+    } else if (diffMins < 60) {
       return `Há ${diffMins} min${diffMins !== 1 ? "s" : ""}`;
     } else if (diffHours < 24) {
       return `Há ${diffHours} h${diffHours !== 1 ? "s" : ""}`;
@@ -76,7 +97,7 @@ export function calculateRiskLevel(post) {
   const body = escapeHTML(post.body || "");
   const payout = parseFloat(post.pending_payout_value || 0);
   const author = post.author;
-  let rawApp = post.json_metadata?.app || "desconhecido";
+  let rawApp = extractPostApp(post);
   let lastedit = post.last_edited || "";
 
   const SUSPICIOUS_APP_PREFIXES = ["inleo", "desconhecido"];
@@ -178,4 +199,30 @@ export function normalizeTags(tags) {
   if (Array.isArray(tags)) return tags.join(" ").toLowerCase();
   if (typeof tags === "string") return tags.toLowerCase();
   return "";
+}
+
+// Extrai a informação de aplicativo com segurança a partir de json_metadata
+export function extractPostApp(post) {
+  if (!post) return "desconhecido";
+  let metadata = post.json_metadata;
+  if (typeof metadata === "string") {
+    try {
+      metadata = JSON.parse(metadata);
+    } catch (e) {
+      // Ignora falha de parse
+    }
+  }
+  if (metadata && typeof metadata === "object" && metadata.app) {
+    return String(metadata.app).trim();
+  }
+  return "desconhecido";
+}
+
+// Normaliza o nome do app (ex: 'peakd/2024.1.2' -> 'peakd', 'ecency/3.0.21' -> 'ecency')
+export function normalizeAppName(rawApp) {
+  if (!rawApp || rawApp === "desconhecido") return "desconhecido";
+  const str = String(rawApp).trim();
+  const match = str.match(/^([a-zA-Z0-9.\-_]+)\//);
+  const base = match ? match[1] : str;
+  return base.trim().toLowerCase();
 }
