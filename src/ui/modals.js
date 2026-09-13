@@ -5,8 +5,9 @@ import { saveSettings } from '../core/settings.js';
 import { muteUser, unmuteUser, isUserMuted } from '../moderation/muting.js';
 import { toggleFlagPost } from '../moderation/flagging.js';
 import { loadFlaggedPosts, searchPosts } from '../moderation/filtering.js';
-import { updateFlaggedCount, updatePostsDisplay, refreshPostsDisplay } from './domHelpers.js';
-import { formatDate, escapeHTML } from '../utils/helpers.js';
+import { updateFlaggedCount, updatePostsDisplay, refreshPostsDisplay, selectDomainFilter } from './domHelpers.js';
+import { formatDate, escapeHTML, copyTextToClipboard } from '../utils/helpers.js';
+import { extractPostUrls, extractPostDomains } from '../utils/linkExtractor.js';
 import { showNotification } from './notifications.js';
 import { openOnchainBlacklistModal } from './onchainBlacklistModal.js';
 import { renderAuthorReputationHtml, handleManualReputationRefresh } from '../api/reputationService.js';
@@ -69,6 +70,9 @@ export function showPostDetail(post) {
     ? `<span class="badge-blacklisted-flair" title="Autor na Blacklist On-Chain da Hive (bridge.get_follow_list)"><i class="fas fa-ban"></i> BLACKLISTED</span>`
     : '';
 
+  const postUrls = extractPostUrls(post);
+  const postDomains = extractPostDomains(post, false);
+
   body.innerHTML = `
         ${previewImgHtml ? `<div class="detail-image-banner" style="margin-bottom: 1rem;">${previewImgHtml}</div>` : ''}
         ${isBlacklisted ? `
@@ -97,9 +101,25 @@ export function showPostDetail(post) {
         </div>
         
         <div class="post-detail-content">
-            <h4>Conteúdo:</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="margin: 0;"><i class="fas fa-file-alt"></i> Conteúdo (Body):</h4>
+                <button type="button" class="btn-copy-body-detail" id="btnCopyDetailBody" title="Copiar apenas o texto do body">
+                    <i class="fas fa-copy"></i> Copiar Body
+                </button>
+            </div>
             <div class="content-box">${formattedContent}</div>
         </div>
+
+        ${postDomains.length > 0 ? `
+          <div class="post-detail-domains-box" style="margin-top: 1rem; padding: 0.8rem 1rem; background: var(--bg-hover, #f8fafc); border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
+            <div style="font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-link" style="color: #0284c7;"></i> Links & Domínios Detectados neste Post (${postUrls.length} links / ${postDomains.length} domínios):
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${postDomains.map(d => `<button type="button" class="badge-domain-clickable" data-domain="${escapeHTML(d)}" title="Filtrar posts pelo domínio ${escapeHTML(d)}"><i class="fas fa-filter"></i> ${escapeHTML(d)}</button>`).join('')}
+            </div>
+          </div>
+        ` : ''}
         
         <div class="post-detail-stats">
             <div class="stat-item">
@@ -134,6 +154,37 @@ export function showPostDetail(post) {
             </button>
         </div>
     `;
+
+    const copyDetailBtn = body.querySelector("#btnCopyDetailBody");
+    if (copyDetailBtn) {
+      copyDetailBtn.addEventListener("click", async () => {
+        const success = await copyTextToClipboard(post.body || "");
+        const icon = copyDetailBtn.querySelector("i");
+        if (icon) {
+          icon.className = "fas fa-check";
+          icon.style.color = "#10b981";
+          setTimeout(() => {
+            icon.className = "fas fa-copy";
+            icon.style.color = "";
+          }, 2000);
+        }
+        if (success) {
+          showNotification("Conteúdo (body) copiado para a área de transferência!", "success");
+        } else {
+          showNotification("Não foi possível copiar o conteúdo automaticamente", "error");
+        }
+      });
+    }
+
+    body.querySelectorAll(".badge-domain-clickable").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const dom = btn.getAttribute("data-domain");
+        closeModal("postDetailModal");
+        if (dom) {
+          selectDomainFilter(dom);
+        }
+      });
+    });
 
     const refreshRepBtn = body.querySelector(".btn-refresh-rep");
     if (refreshRepBtn) {

@@ -9,6 +9,7 @@ export let postsPerPage = 25;
 export let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
 let postTypeFilter = 'all'; 
 let appFilter = 'all';
+let domainFilter = 'all';
 export let sortCriteria = 'created-desc';
 
 export let flaggedCurrentPage = 1;
@@ -70,6 +71,14 @@ export function setAppFilter(newFilter) {
 
 export function getAppFilter() {
     return appFilter;
+}
+
+export function setDomainFilter(newFilter) {
+    domainFilter = newFilter || 'all';
+}
+
+export function getDomainFilter() {
+    return domainFilter;
 }
 
 // NOVO SETTER

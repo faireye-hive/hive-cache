@@ -2,7 +2,7 @@
 
 import { setAllPosts, setFilteredPosts, allPosts } from '../config.js';
 export { allPosts };
-import { updatePostsDisplay, updateFlaggedCount, updateAppFilterDropdown } from '../ui/domHelpers.js';
+import { updatePostsDisplay, updateFlaggedCount, updateAppFilterDropdown, updateDomainFilterDropdown } from '../ui/domHelpers.js';
 import { showNotification } from '../ui/notifications.js';
 import { loadRankingByPosts, loadRankingByPayout, precalculateAuthorStats } from '../utils/statsCalculators.js';
 import { updateSystemStatus } from '../ui/domHelpers.js';
@@ -37,16 +37,21 @@ export async function loadPosts() {
     }
 
     const text = await response.text();
-    const cleanedText = text.replace(/\\\\/g, "\\");
-    const lines = cleanedText.split("\n").filter((line) => line.trim() !== "");
+    const lines = text.split("\n").filter((line) => line.trim() !== "");
 
     const data = lines
       .map((line, index) => {
         try {
           return JSON.parse(line);
         } catch (e) {
-          console.error(`Erro no parsing da linha ${index + 1}:`, line, e);
-          return null;
+          // Tentativa de recuperação caso a linha contenha caracteres de escape ilegais em JSON (ex: \( ou \_)
+          try {
+            const sanitized = line.replace(/\\([^"\\\/bfnrtu])/g, "$1");
+            return JSON.parse(sanitized);
+          } catch (fallbackError) {
+            console.error(`Erro no parsing da linha ${index + 1}:`, line, e);
+            return null;
+          }
         }
       })
       .filter((item) => item !== null);
@@ -58,6 +63,7 @@ export async function loadPosts() {
       setFilteredPosts([...data]);
       seedReputationCacheFromPosts(data);
       updateAppFilterDropdown();
+      updateDomainFilterDropdown();
       updatePostsDisplay();
       updateSystemStatus();
 

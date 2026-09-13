@@ -1,6 +1,6 @@
 // src/app.js
 
-import { loadChartJS, updatePostsDisplay, updateSystemStatus, selectAllPosts, refreshPostsDisplay, selectAppFilter, updateAppFilterDropdown, initViewModeToggle } from './ui/domHelpers.js';
+import { loadChartJS, updatePostsDisplay, updateSystemStatus, selectAllPosts, refreshPostsDisplay, selectAppFilter, updateAppFilterDropdown, updateDomainFilterDropdown, selectDomainFilter, initViewModeToggle } from './ui/domHelpers.js';
 import { loadSettings, applySettings, saveSettings } from './core/settings.js';
 import { initLoginSystem } from './core/auth.js';
 import { initNavigation } from './core/navigation.js';
@@ -12,7 +12,7 @@ import { loadReputationsBackupFile } from './api/reputationService.js';
 import { searchPosts, applyFilter, performAdvancedSearch } from './moderation/filtering.js';
 import { scanForSpam, scanForPlagiarism } from './moderation/scan.js';
 import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage,
-          filteredPosts, getPostTypeFilter, setPostTypeFilter, getSortCriteria, setSortCriteria, getAppFilter, setAppFilter, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from './config.js';
+          filteredPosts, getPostTypeFilter, setPostTypeFilter, getSortCriteria, setSortCriteria, getAppFilter, setAppFilter, getDomainFilter, setDomainFilter, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from './config.js';
 import { debounce } from './utils/helpers.js';
 import { showNotification } from './ui/notifications.js';
 import { updateHeaderBlacklistBadge } from './ui/onchainBlacklistModal.js';
@@ -191,6 +191,15 @@ function initPostTypeFilter() {
         });
 
         appSelect.value = getAppFilter();
+    }
+
+    // NOVO: Filtro de Links e Domínios Agrupados
+    const domainSelect = document.getElementById("domainFilter");
+    if (domainSelect) {
+        domainSelect.value = getDomainFilter();
+        domainSelect.addEventListener('change', (e) => {
+            selectDomainFilter(e.target.value);
+        });
     }
 
     // NOVO: Filtro de Blacklist On-Chain

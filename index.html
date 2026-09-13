@@ -276,20 +276,26 @@
                 <option value="all">Todos os Apps</option>
               </select>
 
+              <select id="domainFilter" title="Filtrar posts por links e domínios agrupados">
+                <option value="all">Todos os Links / Domínios</option>
+                <option value="has-links">🔗 Posts com Links</option>
+                <option value="no-links">📄 Posts sem Links</option>
+              </select>
+
               <select id="blacklistFilter" title="Filtrar por status de Blacklist On-Chain">
                 <option value="hide-blacklisted" selected>Ocultar Blacklisted</option>
                 <option value="all">Mostrar Todos (Inc. Blacklist)</option>
                 <option value="only-blacklisted">Apenas Blacklisted</option>
               </select>
 
-              <select id="reputationFilter" title="Ocultar autores com reputação maior que o limite selecionado (filtra novos abusadores)">
+              <select id="reputationFilter" title="Filtrar por reputação máxima (ocultar autores com reputação acima do limite)">
                 <option value="all" selected>Reputação: Todas</option>
-                <option value="25">Ocultar Rep &gt; 25 (≤ 25)</option>
-                <option value="35">Ocultar Rep &gt; 35 (≤ 35)</option>
-                <option value="45">Ocultar Rep &gt; 45 (≤ 45)</option>
-                <option value="55">Ocultar Rep &gt; 55 (≤ 55)</option>
-                <option value="65">Ocultar Rep &gt; 65 (≤ 65)</option>
-                <option value="custom">Personalizado...</option>
+                <option value="25">≤ 25 (Novos / Suspeitos)</option>
+                <option value="35">≤ 35 (Baixa reputação)</option>
+                <option value="45">≤ 45 (Moderada)</option>
+                <option value="55">≤ 55 (Média)</option>
+                <option value="65">≤ 65 (Padrão)</option>
+                <option value="custom">Personalizado (≤ X)...</option>
               </select>
 
               <button type="button" id="btnHeaderBlacklistSync" class="btn-blacklist-pill" title="Sincronizar e ver Blacklist On-Chain (bridge.get_follow_list)">

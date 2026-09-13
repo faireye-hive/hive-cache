@@ -226,3 +226,39 @@ export function normalizeAppName(rawApp) {
   const base = match ? match[1] : str;
   return base.trim().toLowerCase();
 }
+
+/**
+ * Copia texto para a área de transferência com suporte resiliente (Clipboard API + Fallback de execCommand)
+ * @param {string} text 
+ * @returns {Promise<boolean>}
+ */
+export async function copyTextToClipboard(text) {
+  if (typeof text !== "string") text = String(text || "");
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    // Continua para fallback
+  }
+
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "-9999px";
+    textArea.setAttribute("readonly", "");
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.warn("Falha ao copiar texto via fallback:", err);
+    return false;
+  }
+}
+

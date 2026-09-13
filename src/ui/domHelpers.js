@@ -1,8 +1,9 @@
 // src/ui/domHelpers.js
 
-import { moderationSettings, allPosts, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter, getSortCriteria, getAppFilter, setAppFilter, getViewMode, setViewMode, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from '../config.js';
+import { moderationSettings, allPosts, filteredPosts, currentPage, postsPerPage, flaggedPosts, setCurrentPage, setPostsPerPage, getPostTypeFilter, getSortCriteria, getAppFilter, setAppFilter, getDomainFilter, setDomainFilter, getViewMode, setViewMode, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from '../config.js';
 import { isUserMuted, muteUser, unmuteUser } from '../moderation/muting.js';
-import { calculateRiskLevel, formatDate, escapeHTML, extractPostApp, normalizeAppName } from '../utils/helpers.js';
+import { calculateRiskLevel, formatDate, escapeHTML, extractPostApp, normalizeAppName, copyTextToClipboard } from '../utils/helpers.js';
+import { extractPostDomains, groupPostsByDomain, extractPostUrls } from '../utils/linkExtractor.js';
 import { showPostDetail, openModerationPanel } from './modals.js';
 import { toggleFlagPost } from '../moderation/flagging.js';
 import { showNotification } from './notifications.js';
@@ -77,11 +78,30 @@ export function refreshPostsDisplay() {
   const maxRep = getMaxReputationFilter();
   if (maxRep !== null && !isNaN(maxRep)) {
     postsToShow = postsToShow.filter((post) => {
-      const rep = getCachedReputation(post.author) ?? (typeof post.author_reputation === 'number' ? post.author_reputation : null);
-      // Se não estiver no cache ainda, assume reputação 25 (padrão de nova conta Hive)
-      const score = rep !== null ? rep : 25;
-      return score <= maxRep;
+      const rep = getCachedReputation(post.author);
+      // Se não estiver no cache ainda, NÃO permitir que autores sem verificação escapem do filtro!
+      // Disparamos a requisição em background e só exibimos quem comprovadamente tiver score <= maxRep
+      if (rep === null || typeof rep !== 'number' || isNaN(rep)) {
+        queueReputationFetch([post.author]);
+        return false;
+      }
+      return rep <= maxRep;
     });
+  }
+
+  // F. APLICAR FILTRO DE DOMÍNIOS E LINKS EXTERNOS AGRUPADOS
+  const currentDomainFilter = getDomainFilter();
+  if (currentDomainFilter && currentDomainFilter !== 'all') {
+    if (currentDomainFilter === 'has-links') {
+      postsToShow = postsToShow.filter((post) => extractPostDomains(post).length > 0);
+    } else if (currentDomainFilter === 'no-links') {
+      postsToShow = postsToShow.filter((post) => extractPostDomains(post).length === 0);
+    } else {
+      postsToShow = postsToShow.filter((post) => {
+        const domains = extractPostDomains(post);
+        return domains.includes(currentDomainFilter);
+      });
+    }
   }
   
   
@@ -233,6 +253,13 @@ export function createPostCard(post, viewMode = "grid") {
       }
     }
 
+    // Domínios externos detectados no post para atalho rápido
+    const postDomains = extractPostDomains(post, true).slice(0, 2);
+    let domainChipsHtml = '';
+    if (postDomains.length > 0) {
+      domainChipsHtml = `<div class="post-domains-row">${postDomains.map(d => `<span class="post-domain-chip" data-domain="${escapeHTML(d)}" title="Filtrar posts pelo domínio: ${escapeHTML(d)}"><i class="fas fa-link"></i> ${escapeHTML(d)}</span>`).join('')}</div>`;
+    }
+
     if (viewMode === "list") {
       div.innerHTML = `
         <div class="list-card-left">
@@ -252,6 +279,7 @@ export function createPostCard(post, viewMode = "grid") {
           <h3 class="post-title">${shortTitle || '<span style="color:#9ca3af;font-style:italic;">Sem título</span>'}</h3>
           <p class="post-excerpt">${shortContent}</p>
           <div class="post-tags">${tagsHtml}</div>
+          ${domainChipsHtml}
         </div>
         <div class="list-card-right">
           <div class="list-payout-date">
@@ -259,6 +287,9 @@ export function createPostCard(post, viewMode = "grid") {
             <span class="post-date">${formatDate(post.created)}</span>
           </div>
           <div class="post-actions">
+            <button class="btn-icon copy-body-btn" title="Copiar texto do post (apenas o body)">
+              <i class="fas fa-copy"></i>
+            </button>
             <button class="btn-icon view-post" title="Ver detalhes">
               <i class="fas fa-eye"></i>
             </button>
@@ -294,6 +325,7 @@ export function createPostCard(post, viewMode = "grid") {
             <h3 class="post-title">${shortTitle}</h3>
             <p class="post-excerpt">${shortContent}</p>
             <div class="post-tags">${tagsHtml}</div>
+            ${domainChipsHtml}
             <div class="risk-badge risk-${riskLevel}">${riskLevel.toUpperCase()}</div>
             <div class="post-app" data-app="${escapeHTML(normApp)}" title="${escapeHTML(appTooltip)}">
                 <i class="fas fa-cube"></i> App: ${escapeHTML(rawApp || "Desconhecido")}
@@ -302,6 +334,9 @@ export function createPostCard(post, viewMode = "grid") {
         <div class="post-card-footer">
             <span class="post-date">${formatDate(post.created)}</span>
             <div class="post-actions">
+                <button class="btn-icon copy-body-btn" title="Copiar texto do post (apenas o body)">
+                    <i class="fas fa-copy"></i>
+                </button>
                 <button class="btn-icon view-post" title="Ver detalhes">
                     <i class="fas fa-eye"></i>
                 </button>
@@ -327,6 +362,37 @@ export function createPostCard(post, viewMode = "grid") {
       appBadge.addEventListener("click", (e) => {
         e.stopPropagation();
         selectAppFilter(normApp);
+      });
+    }
+
+    div.querySelectorAll(".post-domain-chip").forEach((chip) => {
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const dom = chip.getAttribute("data-domain");
+        if (dom) selectDomainFilter(dom);
+      });
+    });
+
+    const copyBtn = div.querySelector(".copy-body-btn");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const textToCopy = post.body || "";
+        const success = await copyTextToClipboard(textToCopy);
+        const icon = copyBtn.querySelector("i");
+        if (icon) {
+          icon.className = "fas fa-check";
+          icon.style.color = "#10b981";
+          setTimeout(() => {
+            icon.className = "fas fa-copy";
+            icon.style.color = "";
+          }, 2000);
+        }
+        if (success) {
+          showNotification("Conteúdo (body) copiado para a área de transferência!", "success");
+        } else {
+          showNotification("Não foi possível copiar o conteúdo automaticamente", "error");
+        }
       });
     }
 
@@ -500,3 +566,91 @@ export function updateAppFilterDropdown() {
     setAppFilter("all");
   }
 }
+
+/**
+ * Define o filtro de domínio programaticamente e atualiza a interface
+ * @param {string} domainName 
+ */
+export function selectDomainFilter(domainName) {
+  const domainSelect = document.getElementById("domainFilter");
+  setDomainFilter(domainName);
+  if (domainSelect) {
+    domainSelect.value = domainName;
+  }
+  setCurrentPage(1);
+  refreshPostsDisplay();
+  showNotification(
+    domainName === "all"
+      ? "Exibindo posts com todos os links"
+      : domainName === "has-links"
+      ? "Exibindo posts que possuem links"
+      : domainName === "no-links"
+      ? "Exibindo posts sem links externos"
+      : `Filtrando posts pelo domínio: ${domainName}`,
+    "info"
+  );
+}
+
+/**
+ * Popula dinamicamente o dropdown de seleção de links e domínios agrupados com contagens reais
+ */
+export function updateDomainFilterDropdown() {
+  const domainSelect = document.getElementById("domainFilter");
+  if (!domainSelect) return;
+
+  const currentSelected = getDomainFilter();
+  const grouped = groupPostsByDomain(allPosts, false);
+
+  let postsWithLinksCount = 0;
+  let postsWithoutLinksCount = 0;
+
+  allPosts.forEach((p) => {
+    const domains = extractPostDomains(p, false);
+    if (domains.length > 0) {
+      postsWithLinksCount++;
+    } else {
+      postsWithoutLinksCount++;
+    }
+  });
+
+  domainSelect.innerHTML = "";
+
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = `Todos os Links / Domínios (${allPosts.length.toLocaleString('pt-BR')})`;
+  domainSelect.appendChild(allOption);
+
+  const hasLinksOpt = document.createElement("option");
+  hasLinksOpt.value = "has-links";
+  hasLinksOpt.textContent = `🔗 Com Links (${postsWithLinksCount.toLocaleString('pt-BR')})`;
+  domainSelect.appendChild(hasLinksOpt);
+
+  const noLinksOpt = document.createElement("option");
+  noLinksOpt.value = "no-links";
+  noLinksOpt.textContent = `📄 Sem Links (${postsWithoutLinksCount.toLocaleString('pt-BR')})`;
+  domainSelect.appendChild(noLinksOpt);
+
+  if (grouped.length > 0) {
+    const optGroup = document.createElement("optgroup");
+    optGroup.label = "Domínios Agrupados";
+
+    // Mostra os 120 domínios mais frequentes
+    grouped.slice(0, 120).forEach(({ domain, count, isImageCdn }) => {
+      const opt = document.createElement("option");
+      opt.value = domain;
+      const cdnTag = isImageCdn ? " [CDN]" : "";
+      opt.textContent = `${domain}${cdnTag} (${count.toLocaleString('pt-BR')})`;
+      optGroup.appendChild(opt);
+    });
+
+    domainSelect.appendChild(optGroup);
+  }
+
+  if (currentSelected && (currentSelected === "all" || currentSelected === "has-links" || currentSelected === "no-links" || grouped.some(g => g.domain === currentSelected))) {
+    domainSelect.value = currentSelected;
+  } else {
+    domainSelect.value = "all";
+    setDomainFilter("all");
+  }
+}
+
