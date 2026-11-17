@@ -24,6 +24,7 @@ let followedBlacklists = []; // [{ name, blacklist_description, muted_list_descr
 let includeFollowedInFilter = localStorage.getItem(STORAGE_KEY_INCLUDE_FOLLOWED) !== 'false'; // default true
 let lastSyncTimestamp = 0;
 let currentObserver = localStorage.getItem(STORAGE_KEY_OBSERVER) || 'sm-silva';
+let personalBlacklistOwner = currentObserver;
 const updateListeners = new Set();
 
 /**
@@ -36,7 +37,10 @@ export function initOnchainBlacklistCache() {
       const parsed = JSON.parse(rawPersonal);
       if (Array.isArray(parsed.accounts)) {
         personalBlacklist = parsed.accounts;
-        if (parsed.observer) currentObserver = parsed.observer;
+        if (parsed.observer) {
+          currentObserver = parsed.observer;
+          personalBlacklistOwner = parsed.observer;
+        }
         if (parsed.timestamp) lastSyncTimestamp = parsed.timestamp;
       }
     }
@@ -74,7 +78,7 @@ function rebuildConsolidatedBlacklist() {
       accountDetailsMap.set(name, {
         name,
         source: 'personal',
-        sourceOwner: getBlacklistObserver(),
+        sourceOwner: personalBlacklistOwner,
         description: item.blacklist_description || item.reason || '',
         mutedDescription: item.muted_list_description || '',
         addedAt: item.addedAt || null,
@@ -152,6 +156,26 @@ export function getAccountBlacklistDetails(username) {
   return accountDetailsMap.get(clean) || null;
 }
 
+export function getBlacklistListMemberships(authors) {
+  const memberships = new Map();
+  function collect(owner, accounts) {
+    for (const account of accounts) {
+      const name = (typeof account === 'string' ? account : account?.name)?.toLowerCase().trim();
+      if (!authors.has(name)) continue;
+      if (!memberships.has(name)) memberships.set(name, new Set());
+      memberships.get(name).add(owner);
+    }
+  }
+
+  collect(personalBlacklistOwner, personalBlacklist);
+  if (includeFollowedInFilter) {
+    for (const list of followedBlacklists) {
+      if (list?.name && Array.isArray(list.accounts)) collect(list.name, list.accounts);
+    }
+  }
+  return memberships;
+}
+
 /**
  * Retorna a contagem total de contas ativas na blacklist
  */
@@ -222,17 +246,17 @@ function notifyUpdateListeners() {
 /**
  * Adiciona uma conta à lista pessoal em memória e no cache local
  */
-export function addOnchainBlacklistedAccount(username, metadata = {}) {
-  if (!username) return;
+export function addOnchainBlacklistedAccount(username, metadata = {}, owner = getBlacklistObserver()) {
+  if (!username || owner !== personalBlacklistOwner) return;
   const clean = String(username).toLowerCase().trim().replace(/^@/, '');
 
-  const exists = personalBlacklist.some(
+  const index = personalBlacklist.findIndex(
     (item) => (typeof item === 'string' ? item : item.name).toLowerCase() === clean
   );
 
   const reason = metadata.reason || metadata.blacklist_description || 'Adicionado via Keychain';
 
-  if (!exists) {
+  if (index === -1) {
     personalBlacklist.unshift({
       name: clean,
       blacklist_description: reason,
@@ -240,13 +264,11 @@ export function addOnchainBlacklistedAccount(username, metadata = {}) {
       addedAt: new Date().toISOString(),
     });
   } else {
-    // Atualiza descrição se fornecida
-    const idx = personalBlacklist.findIndex(
-      (item) => (typeof item === 'string' ? item : item.name).toLowerCase() === clean
-    );
-    if (idx !== -1) {
-      personalBlacklist[idx].blacklist_description = reason;
-    }
+    const existing = personalBlacklist[index];
+    personalBlacklist[index] = {
+      ...(typeof existing === 'string' ? { name: clean } : existing),
+      blacklist_description: reason,
+    };
   }
 
   rebuildConsolidatedBlacklist();
@@ -257,8 +279,8 @@ export function addOnchainBlacklistedAccount(username, metadata = {}) {
 /**
  * Remove uma conta da lista pessoal
  */
-export function removeOnchainBlacklistedAccount(username) {
-  if (!username) return;
+export function removeOnchainBlacklistedAccount(username, owner = getBlacklistObserver()) {
+  if (!username || owner !== personalBlacklistOwner) return;
   const clean = String(username).toLowerCase().trim().replace(/^@/, '');
 
   personalBlacklist = personalBlacklist.filter(
@@ -276,7 +298,7 @@ export function removeOnchainBlacklistedAccount(username) {
 function saveCacheToStorage() {
   try {
     const personalPayload = {
-      observer: getBlacklistObserver(),
+      observer: personalBlacklistOwner,
       timestamp: lastSyncTimestamp,
       accounts: personalBlacklist,
     };
@@ -329,7 +351,7 @@ async function callBridgeApi(method, params) {
       lastError = err;
     }
   }
-  throw lastError || new Error('Falha em todos os endpoints RPC.');
+  throw lastError || new Error('All RPC endpoints failed.');
 }
 
 /**
@@ -347,7 +369,7 @@ export async function syncOnchainBlacklist(customObserver = null, forceRefresh =
     follow_type: 'blacklisted',
   });
 
-  personalBlacklist = (personalRaw || []).map((item) => ({
+  const personalAccounts = (personalRaw || []).map((item) => ({
     name: String(item.name || '').toLowerCase().trim(),
     blacklist_description: item.blacklist_description || '',
     muted_list_description: item.muted_list_description || '',
@@ -401,6 +423,8 @@ export async function syncOnchainBlacklist(customObserver = null, forceRefresh =
     });
   }
 
+  personalBlacklist = personalAccounts;
+  personalBlacklistOwner = observer;
   followedBlacklists = followedSummary;
   lastSyncTimestamp = Date.now();
   currentObserver = observer;

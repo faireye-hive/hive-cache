@@ -4,6 +4,7 @@ import { currentUser, setCurrentUser } from '../config.js';
 import { showNotification } from '../ui/notifications.js';
 import { loginWithHiveKeychain, isKeychainInstalled, waitForKeychain } from '../blockchain/hiveKeychain.js';
 import { openOnchainBlacklistModal } from '../ui/onchainBlacklistModal.js';
+import { getProxiedImageUrl } from '../utils/imageProxy.js';
 
 export function initLoginSystem() {
   const loginModal = document.getElementById("loginModal");
@@ -42,14 +43,14 @@ export function initLoginSystem() {
       const usernameVal = keychainUsernameInput?.value?.trim();
 
       if (!usernameVal) {
-        showNotification("Digite seu nome de usuário Hive para autenticar.", "warning");
+        showNotification("Enter your Hive username to authenticate.", "warning");
         keychainUsernameInput?.focus();
         return;
       }
 
       const originalText = btnSubmitKeychain.innerHTML;
       btnSubmitKeychain.disabled = true;
-      btnSubmitKeychain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Solicitando Assinatura...';
+      btnSubmitKeychain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting signature...';
 
       try {
         const userSession = await loginWithHiveKeychain(usernameVal);
@@ -59,12 +60,12 @@ export function initLoginSystem() {
         if (loginModal) loginModal.classList.add("hidden");
         updateUserInfo();
         showNotification(
-          `Bem-vindo(a), @${userSession.username}! Autenticado com sucesso via Hive Keychain.`,
+          `Welcome, @${userSession.username}! Signed in successfully with Hive Keychain.`,
           "success"
         );
       } catch (error) {
-        console.error("Erro no login com Keychain:", error);
-        showNotification(`Falha na autenticação: ${error.message || error}`, "error");
+        console.error("Hive Keychain sign-in error:", error);
+        showNotification(`Authentication failed: ${error.message || error}`, "error");
       } finally {
         btnSubmitKeychain.disabled = false;
         btnSubmitKeychain.innerHTML = originalText;
@@ -86,7 +87,7 @@ export function initLoginSystem() {
   if (guestLoginBtn) {
     guestLoginBtn.addEventListener("click", () => {
       const guestUser = {
-        username: "visitante",
+        username: "guest",
         role: "viewer",
         loginMethod: "guest",
         avatar: "https://images.hive.blog/u/hive/avatar/small",
@@ -95,7 +96,7 @@ export function initLoginSystem() {
       localStorage.setItem("currentUser", JSON.stringify(guestUser));
       if (loginModal) loginModal.classList.add("hidden");
       updateUserInfo();
-      showNotification("Modo visitante ativado (apenas visualização)", "info");
+      showNotification("Guest mode enabled (read only)", "info");
     });
   }
 
@@ -123,9 +124,9 @@ export function initLoginSystem() {
         localStorage.setItem("currentUser", JSON.stringify(user));
         if (loginModal) loginModal.classList.add("hidden");
         updateUserInfo();
-        showNotification(`Logado como @${username} (modo manual)`, "success");
+        showNotification(`Signed in as @${username} (manual mode)`, "success");
       } else {
-        showNotification("Digite seu nome de usuário Hive", "warning");
+        showNotification("Enter your Hive username", "warning");
       }
     });
   }
@@ -137,7 +138,7 @@ export function initLoginSystem() {
       localStorage.removeItem("currentUser");
       updateUserInfo();
       if (loginModal) loginModal.classList.remove("hidden");
-      showNotification("Sessão encerrada com sucesso.", "info");
+      showNotification("Signed out successfully.", "info");
     });
   }
 
@@ -175,14 +176,14 @@ function updateKeychainStatusBanner(installed) {
     statusEl.innerHTML = `
       <div class="keychain-detected">
         <i class="fas fa-check-circle"></i>
-        <span>Extensão <strong>Hive Keychain</strong> detectada e pronta para uso!</span>
+        <span>Hive Keychain extension detected and ready to use!</span>
       </div>
     `;
   } else {
     statusEl.innerHTML = `
       <div class="keychain-not-detected">
         <i class="fas fa-info-circle"></i>
-        <span>Extensão Hive Keychain não detectada. Se estiver usando o preview em iframe, abra em uma nova aba para permitir acesso das extensões Web3.</span>
+        <span>Hive Keychain extension not detected. If you are using an iframe preview, open the app in a new tab to allow access to Web3 extensions.</span>
       </div>
     `;
   }
@@ -206,7 +207,8 @@ export function updateUserInfo() {
     }
 
     if (userAvatarImg) {
-      userAvatarImg.src = currentUser.avatar || `https://images.hive.blog/u/${currentUser.username}/avatar/small`;
+      const avatarUrl = currentUser.avatar || `https://images.hive.blog/u/${encodeURIComponent(currentUser.username)}/avatar/small`;
+      userAvatarImg.src = getProxiedImageUrl(avatarUrl, 96, 96) || '';
       userAvatarImg.classList.remove("hidden");
     }
 
@@ -224,7 +226,7 @@ export function updateUserInfo() {
     if (settingsBtn) settingsBtn.classList.remove("hidden");
   } else {
     if (currentUserSpan) {
-      currentUserSpan.textContent = "Não conectado";
+      currentUserSpan.textContent = "Not signed in";
     }
 
     if (userAvatarImg) {

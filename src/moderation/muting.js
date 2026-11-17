@@ -10,7 +10,7 @@ export function muteUser(username) {
   if (!moderationSettings.mutedUsers.includes(username)) {
     moderationSettings.mutedUsers.push(username);
     saveSettings();
-    showNotification(`Usuário ${username} mutado com sucesso!`, "warning");
+    showNotification(`Posts by @${username} are hidden from Recent Posts.`, "info");
     refreshPostsDisplay();
   }
 }
@@ -21,7 +21,7 @@ export function unmuteUser(username) {
   if (index !== -1) {
     moderationSettings.mutedUsers.splice(index, 1);
     saveSettings();
-    showNotification(`Usuário ${username} desmutado!`, "info");
+    showNotification(`Posts by @${username} can appear in Recent Posts again.`, "info");
     refreshPostsDisplay();
   }
 }

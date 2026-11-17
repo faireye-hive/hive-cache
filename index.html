@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,56 +19,56 @@
   </head>
   <body>
     <!-- Sistema de Login com Hive Keychain -->
-    <div id="loginModal" class="modal">
+    <div id="loginModal" class="modal hidden">
       <div class="modal-content" style="max-width: 480px;">
         <div class="modal-header" style="padding-bottom: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-          <h2 style="margin: 0; font-size: 1.25rem;"><i class="fas fa-key" style="color: var(--primary-color);"></i> Autenticação Hive Keychain</h2>
-          <span class="close-modal" id="closeLoginModalBtn" title="Fechar">&times;</span>
+          <h2 style="margin: 0; font-size: 1.25rem;"><i class="fas fa-key" style="color: var(--primary-color);"></i> Hive Keychain Authentication</h2>
+          <span class="close-modal" id="closeLoginModalBtn" title="Close">&times;</span>
         </div>
 
         <div id="keychainStatusInfo" class="keychain-status-box"></div>
 
         <div class="login-keychain-card">
           <div class="form-group">
-            <label for="keychainUsername"><i class="fas fa-at"></i> Nome de Usuário Hive</label>
+            <label for="keychainUsername"><i class="fas fa-at"></i> Hive Username</label>
             <input
               type="text"
               id="keychainUsername"
-              placeholder="ex: seu_usuario_hive"
+              placeholder="e.g. hive_username"
               class="form-input"
               autocomplete="username"
             />
           </div>
           <button id="btnSubmitKeychain" class="btn-primary btn-full-width" style="padding: 0.75rem; font-size: 1rem; font-weight: 600;">
-            <i class="fas fa-shield-alt"></i> Entrar com Hive Keychain
+            <i class="fas fa-shield-alt"></i> Sign in with Hive Keychain
           </button>
         </div>
 
-        <div class="login-divider"><span>OU</span></div>
+        <div class="login-divider"><span>OR</span></div>
 
         <div class="login-secondary-actions">
           <button id="guestLoginBtn" class="btn-action btn-full-width" style="margin-bottom: 8px;">
-            <i class="fas fa-eye"></i> Continuar como Visitante (Somente Leitura)
+            <i class="fas fa-eye"></i> Continue as Guest (Read Only)
           </button>
           
           <button id="manualLogin" class="btn-link-action">
-            <i class="fas fa-terminal"></i> Modo Manual Alternativo
+            <i class="fas fa-terminal"></i> Alternative Manual Login
           </button>
 
           <div id="manualLoginForm" class="hidden" style="margin-top: 10px; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
             <input
               type="text"
               id="username"
-              placeholder="Nome de usuário manual"
+              placeholder="Manual username"
               class="form-input"
               style="margin-bottom: 8px;"
             />
-            <button id="submitManualLogin" class="btn-secondary btn-full-width">Entrar como Moderador</button>
+            <button id="submitManualLogin" class="btn-secondary btn-full-width">Sign in as Moderator</button>
           </div>
         </div>
 
         <p class="note" style="margin-top: 1rem; font-size: 0.8rem; color: #6b7280; text-align: center;">
-          * A assinatura via Hive Keychain é segura e não expõe sua chave privada.
+          * Hive Keychain signing is secure and never exposes your private key.
         </p>
       </div>
     </div>
@@ -80,29 +80,29 @@
         <h1>Hive Moderation Dashboard</h1>
       </div>
       <div class="nav-user" id="userInfo">
-        <button id="navBlacklistBtn" class="btn-action btn-blacklist-nav" title="Gerenciar Blacklist na Hive Blockchain (Custom JSON)">
+        <button id="navBlacklistBtn" class="btn-action btn-blacklist-nav" title="Manage the Hive Blockchain blacklist (Custom JSON)">
           <i class="fas fa-shield-virus"></i> Blacklist On-Chain
         </button>
 
         <div class="user-profile-badge" id="userProfileBadge">
           <img id="userAvatarImg" class="user-avatar hidden" src="" alt="Avatar" />
-          <span id="currentUser">Não conectado</span>
-          <span id="keychainBadge" class="badge-keychain hidden" title="Autenticado com Hive Keychain">
+          <span id="currentUser">Not signed in</span>
+          <span id="keychainBadge" class="badge-keychain hidden" title="Authenticated with Hive Keychain">
             <i class="fas fa-check-circle"></i> Keychain
           </span>
         </div>
 
-        <button id="openLoginNavBtn" class="btn-action btn-login-nav" title="Conectar Hive Keychain">
-          <i class="fas fa-key"></i> Conectar
+        <button id="openLoginNavBtn" class="btn-action btn-login-nav" title="Connect Hive Keychain">
+          <i class="fas fa-key"></i> Connect
         </button>
 
-        <!-- Botão de Configurações -->
-        <button id="settingsBtn" class="btn-icon" title="Configurações">
+        <!-- Botão de Settings -->
+        <button id="settingsBtn" class="btn-icon" title="Settings">
           <i class="fas fa-cog"></i>
         </button>
 
-        <button id="logoutBtn" class="btn-logout hidden" title="Sair da conta">
-          <i class="fas fa-sign-out-alt"></i> Sair
+        <button id="logoutBtn" class="btn-logout hidden" title="Sign out">
+          <i class="fas fa-sign-out-alt"></i> Sign out
         </button>
       </div>
     </nav>
@@ -114,13 +114,13 @@
         <input
           type="text"
           id="searchInput"
-          placeholder="Buscar por autor, título, conteúdo, tags..."
+          placeholder="Search by author, title, content, tags..."
         />
         <select id="searchFilter">
-          <option value="all">Tudo</option>
-          <option value="author">Autor</option>
-          <option value="title">Título</option>
-          <option value="content">Conteúdo</option>
+          <option value="all">All</option>
+          <option value="author">Author</option>
+          <option value="title">Title</option>
+          <option value="content">Content</option>
           <option value="tags">Tags</option>
           <option value="app">App</option>
         </select>
@@ -130,46 +130,46 @@
           id="syncRpcBtn"
           class="btn-action"
           style="background-color: #2980b9;"
-          title="Sincronizar posts mais recentes diretamente via Hive RPC (Sem HAFSQL, rápido e salva no cache)"
+          title="Sync the latest posts directly via Hive RPC (without HAFSQL; fast and cached)"
         >
-          <i class="fas fa-bolt"></i> Sincronizar (Sem HAFSQL)
+          <i class="fas fa-bolt"></i> Sync (No HAFSQL)
         </button>
         <button
           id="syncBlockchainBtn"
           class="btn-action"
           style="background-color: #27ae60;"
-          title="Baixar posts e comentários reais mais recentes diretamente da Hive Blockchain (HAFSQL)"
+          title="Download the last seven days of Hive posts and comments from HAFSQL"
         >
-          <i class="fas fa-cloud-download-alt"></i> Atualizar Tudo (HAFSQL)
+          <i class="fas fa-cloud-download-alt"></i> Sync 7 Days (HAFSQL)
         </button>
         <button
           id="hybridSyncBtn"
           class="btn-action"
           style="background-color: #8e44ad;"
-          title="Abrir painel de Sincronização Híbrida e Gerenciamento de Cache de Reputações"
+          title="Open hybrid sync and reputation cache settings"
         >
-          <i class="fas fa-layer-group"></i> Sincronização Híbrida
+          <i class="fas fa-layer-group"></i> Hybrid Sync
         </button>
-        <button id="refreshBtn" class="btn-action" title="Recarregar posts do cache">
-          <i class="fas fa-sync-alt"></i> Atualizar
+        <button id="refreshBtn" class="btn-action" title="Reload posts from cache">
+          <i class="fas fa-sync-alt"></i> Refresh
         </button>
         <button id="cacheStatsBtn" class="btn-action">
           <i class="fas fa-chart-bar"></i> Cache Stats
         </button>
         <button id="clearCacheBtn" class="btn-action btn-danger">
-          <i class="fas fa-trash"></i> Limpar Cache
+          <i class="fas fa-trash"></i> Clear Cache
         </button>
         <button
           id="mutedUsersBtn"
           class="btn-primary"
-          title="Gerenciar usuários mutados"
+          title="Manage hidden users"
         >
-          <i class="fas fa-user-slash"></i> Usuários Mutados
+          <i class="fas fa-eye-slash"></i> Hidden Users
         </button>
       </div>
     </div>
 
-    <!-- Conteúdo Principal -->
+    <!-- Main Content -->
     <div class="container">
 
 
@@ -180,352 +180,310 @@
           <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
           <ul class="nav-menu">
             <li class="active" data-section="posts">
-              <i class="fas fa-newspaper"></i> Posts Recentes
+              <i class="fas fa-newspaper"></i> Recent Posts
             </li>
             <li data-section="ranking-posts">
-              <i class="fas fa-trophy"></i> Ranking por Posts
+              <i class="fas fa-trophy"></i> Post Rankings
             </li>
             <li data-section="ranking-payout">
-              <i class="fas fa-money-bill-wave"></i> Ranking por Payout
+              <i class="fas fa-money-bill-wave"></i> Payout Rankings
             </li>
             <li data-section="moderation">
-              <i class="fas fa-user-shield"></i> Moderação
+              <i class="fas fa-user-shield"></i> Moderation
             </li>
             <li data-section="flagged">
-              <i class="fas fa-flag"></i> Sinalizados
+              <i class="fas fa-flag"></i> Flagged
             </li>
             <li data-section="search">
-              <i class="fas fa-search"></i> Busca Avançada
+              <i class="fas fa-search"></i> Advanced Search
             </li>
             <li data-section="stats">
-              <i class="fas fa-chart-pie"></i> Estatísticas
+              <i class="fas fa-chart-pie"></i> Statistics
             </li>
           </ul>
         </div>
 
         <div class="sidebar-section">
-          <h3><i class="fas fa-filter"></i> Filtros Rápidos</h3>
+          <h3><i class="fas fa-filter"></i> Quick Filters</h3>
           <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="all">Todos</button>
+            <button class="filter-btn active" data-filter="all">All</button>
             <button class="filter-btn" data-filter="last-hour">
-              Última Hora
+              Last Hour
             </button>
-            <button class="filter-btn" data-filter="last-6h">Últimas 6h</button>
+            <button class="filter-btn" data-filter="last-6h">Last 6 Hours</button>
             <button class="filter-btn" data-filter="high-payout">
-              Alto Payout
+              High Payout
             </button>
             <button class="filter-btn" data-filter="flagged">
-              Sinalizados
+              Flagged
             </button>
-            <button class="filter-btn" data-filter="deleted">Deletados</button>
+            <button class="filter-btn" data-filter="deleted">Deleted</button>
           </div>
         </div>
 
         <div class="sidebar-section">
-          <h3><i class="fas fa-chart-line"></i> Status do Sistema</h3>
+          <h3><i class="fas fa-chart-line"></i> System Status</h3>
           <div class="status-info">
             <div class="status-item">
-              <span class="status-label">Fonte:</span>
+              <span class="status-label">Source:</span>
               <span id="dataSourceBadge" class="status-value" style="color: #27ae60; font-weight: bold;">
                 <i class="fas fa-link"></i> Hive HAFSQL (Real)
               </span>
             </div>
             <div class="status-item">
-              <span class="status-label">Posts em Cache:</span>
+              <span class="status-label">Cached Posts:</span>
               <span id="cacheCount" class="status-value">0</span>
             </div>
             <div class="status-item">
-              <span class="status-label">Última Atualização:</span>
+              <span class="status-label">Last Updated:</span>
               <span id="lastUpdate" class="status-value">-</span>
             </div>
             <div class="status-item">
-              <span class="status-label">Usuários Online:</span>
+              <span class="status-label">Users Online:</span>
               <span id="onlineUsers" class="status-value">1</span>
             </div>
             <div class="status-item">
-              <span class="status-label">Posts Sinalizados:</span>
+              <span class="status-label">Flagged Posts:</span>
               <span id="flaggedCount" class="status-value">0</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Conteúdo Principal -->
+      <!-- Main Content -->
       <main class="main-content">
-        <!-- Seção: Posts Recentes -->
+        <!-- Section: Recent Posts -->
         <section id="posts-section" class="content-section active">
           <div class="section-header">
-            <h2><i class="fas fa-newspaper"></i> Posts Recentes</h2>
+            <h2><i class="fas fa-newspaper"></i> Recent Posts</h2>
 
 
             <div class="section-controls">
               
               <select id="sortCriteria">
-                <option value="created-desc">Mais Recentes</option>
-                <option value="payout-desc">Maior Payout</option>
-                <option value="risk-desc">Maior Risco</option>
+                <option value="created-desc">Newest First</option>
+                <option value="payout-desc">Highest Payout</option>
+                <option value="risk-desc">Highest Risk</option>
               </select>
 
               <select id="postTypeFilter">
-                <option value="all">Todos os Posts</option>
-                <option value="only-posts">Apenas Posts Originais</option>
-                <option value="only-comments">Apenas Comentários</option>
+                <option value="all">All Posts</option>
+                <option value="only-posts">Original Posts Only</option>
+                <option value="only-comments">Comments Only</option>
               </select>
 
-              <select id="appFilter" title="Filtrar por aplicativo (app)">
-                <option value="all">Todos os Apps</option>
+              <select id="appFilter" title="Filter by app">
+                <option value="all">All Apps</option>
               </select>
 
-              <select id="domainFilter" title="Filtrar posts por links e domínios agrupados">
-                <option value="all">Todos os Links / Domínios</option>
-                <option value="has-links">🔗 Posts com Links</option>
-                <option value="no-links">📄 Posts sem Links</option>
+              <select id="domainFilter" title="Filter posts by links and grouped domains">
+                <option value="all">All Links / Domains</option>
+                <option value="has-links">🔗 Posts with Links</option>
+                <option value="no-links">📄 Posts without Links</option>
               </select>
 
-              <select id="blacklistFilter" title="Filtrar por status de Blacklist On-Chain">
-                <option value="hide-blacklisted" selected>Ocultar Blacklisted</option>
-                <option value="all">Mostrar Todos (Inc. Blacklist)</option>
-                <option value="only-blacklisted">Apenas Blacklisted</option>
+              <select id="blacklistFilter" title="Filter by on-chain blacklist status">
+                <option value="hide-blacklisted" selected>Hide Blacklisted</option>
+                <option value="all">Show All (Including Blacklisted)</option>
+                <option value="only-blacklisted">Blacklisted Only</option>
               </select>
 
-              <select id="reputationFilter" title="Filtrar por reputação máxima (ocultar autores com reputação acima do limite)">
-                <option value="all" selected>Reputação: Todas</option>
-                <option value="25">≤ 25 (Novos / Suspeitos)</option>
-                <option value="35">≤ 35 (Baixa reputação)</option>
-                <option value="45">≤ 45 (Moderada)</option>
-                <option value="55">≤ 55 (Média)</option>
-                <option value="65">≤ 65 (Padrão)</option>
-                <option value="custom">Personalizado (≤ X)...</option>
+              <select id="reputationFilter" title="Filter by maximum reputation (hide authors above this score)">
+                <option value="all" selected>Reputation: All</option>
+                <option value="25">≤ 25 (New / Suspicious)</option>
+                <option value="35">≤ 35 (Low reputation)</option>
+                <option value="45">≤ 45 (Moderate)</option>
+                <option value="55">≤ 55 (Medium)</option>
+                <option value="65">≤ 65 (Default)</option>
+                <option value="custom">Custom (≤ X)...</option>
               </select>
 
-              <button type="button" id="btnHeaderBlacklistSync" class="btn-blacklist-pill" title="Sincronizar e ver Blacklist On-Chain (bridge.get_follow_list)">
+              <button type="button" id="groupPostsByAuthor" class="btn-group-posts" aria-pressed="false">
+                <i class="fas fa-layer-group" aria-hidden="true"></i> Group by author
+              </button>
+
+              <button type="button" id="btnHeaderBlacklistSync" class="btn-blacklist-pill" title="Sync and view on-chain blacklist (bridge.get_follow_list)">
                 <i class="fas fa-shield-virus"></i>
                 <span id="headerBlacklistCountBadge" class="badge-count-pill">0</span>
               </button>
 
               <div class="view-mode-toggle" id="viewModeToggleGroup">
-                <button type="button" id="viewModeGrid" class="btn-view-mode active" title="Visualização em Grade">
+                <button type="button" id="viewModeGrid" class="btn-view-mode active" title="Grid view">
                   <i class="fas fa-th-large"></i>
                 </button>
-                <button type="button" id="viewModeList" class="btn-view-mode" title="Visualização em Lista">
+                <button type="button" id="viewModeList" class="btn-view-mode" title="List view">
                   <i class="fas fa-bars"></i>
                 </button>
               </div>
 
               <div class="pagination">
-                <button id="prevPage" class="btn-pagination">
+                <button type="button" id="prevPage" class="btn-pagination" aria-label="Previous page" disabled>
                   <i class="fas fa-chevron-left"></i>
                 </button>
-                <span id="pageInfo">Página 1</span>
-                <button id="nextPage" class="btn-pagination">
+                <span id="pageInfo">Page 1</span>
+                <button type="button" id="nextPage" class="btn-pagination" aria-label="Next page" disabled>
                   <i class="fas fa-chevron-right"></i>
                 </button>
               </div>
               <select id="postsPerPage">
-                <option value="10">10 por página</option>
-                <option value="25" selected>25 por página</option>
-                <option value="50">50 por página</option>
-                <option value="100">100 por página</option>
+                <option value="10">10 per page</option>
+                <option value="25" selected>25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
               </select>
             </div>
           </div>
 
+          <p id="postResultsSummary" class="post-results-summary" role="status"></p>
           <div class="posts-container" id="postsContainer">
-            <!-- Posts serão carregados aqui via JavaScript -->
+            <!-- Posts will load here via JavaScript -->
           </div>
 
           <div class="loading" id="loadingPosts">
-            <i class="fas fa-spinner fa-spin"></i> Carregando posts...
+            <i class="fas fa-spinner fa-spin"></i> Loading posts...
           </div>
         </section>
 
-        <!-- Seção: Ranking por Posts -->
+        <!-- Section: Post Rankings -->
         <section id="ranking-posts-section" class="content-section">
           <div class="section-header">
-            <h2><i class="fas fa-trophy"></i> Ranking por Total de Posts</h2>
+            <h2><i class="fas fa-trophy"></i> Top Authors by Post Count</h2>
             <div class="time-filter">
               <select id="rankingTimeFilter">
-                <option value="24">Últimas 24h</option>
-                <option value="72">Últimas 72h</option>
-                <option value="168" selected>Última semana</option>
-                <option value="720">Últimos 30 dias</option>
+                <option value="24">Last 24 Hours</option>
+                <option value="72">Last 72 Hours</option>
+                <option value="168" selected>Last 7 Days</option>
+                <option value="720">Last 30 Days</option>
               </select>
             </div>
           </div>
           <div class="ranking-container" id="rankingPostsContainer">
-            <!-- Ranking será carregado aqui -->
+            <!-- Rankings will load here -->
           </div>
         </section>
 
-        <!-- Seção: Ranking por Payout -->
+        <!-- Section: Payout Rankings -->
         <section id="ranking-payout-section" class="content-section">
           <div class="section-header">
             <h2>
-              <i class="fas fa-money-bill-wave"></i> Ranking por Payout Pendente
+              <i class="fas fa-money-bill-wave"></i> Pending Payout Rankings
             </h2>
             <div class="time-filter">
               <select id="payoutTimeFilter">
-                <option value="24">Últimas 24h</option>
-                <option value="72">Últimas 72h</option>
-                <option value="168" selected>Última semana</option>
-                <option value="720">Últimos 30 dias</option>
+                <option value="24">Last 24 Hours</option>
+                <option value="72">Last 72 Hours</option>
+                <option value="168" selected>Last 7 Days</option>
+                <option value="720">Last 30 Days</option>
               </select>
             </div>
           </div>
+          <p class="stats-card-note">Totals use the data in your local cache. Use Sync 7 Days (HAFSQL) to fill the seven-day window.</p>
           <div class="ranking-container" id="rankingPayoutContainer">
-            <!-- Ranking de payout será carregado aqui -->
+            <!-- Payout rankings will load here -->
           </div>
         </section>
 
-        <!-- Seção: Moderação -->
+        <!-- Section: Moderation -->
         <section id="moderation-section" class="content-section">
           <div class="section-header">
-            <h2><i class="fas fa-user-shield"></i> Painel de Moderação</h2>
-            <div class="moderation-tools">
-              <button id="scanSpamBtn" class="btn-action">
-                <i class="fas fa-robot"></i> Verificar Spam
-              </button>
-              <button id="scanPlagiarismBtn" class="btn-action">
-                <i class="fas fa-copy"></i> Verificar Plágio
-              </button>
-              <button id="bulkActionBtn" class="btn-action btn-danger">
-                <i class="fas fa-ban"></i> Ação em Massa
-              </button>
-            </div>
+            <h2><i class="fas fa-user-shield"></i> Moderation Dashboard</h2>
           </div>
 
-          <div class="moderation-filters">
-            <div class="filter-group">
-              <label
-                ><input type="checkbox" id="filterSpam" checked /> Spam</label
-              >
-              <label
-                ><input type="checkbox" id="filterPlagiarism" checked />
-                Plágio</label
-              >
-              <label
-                ><input type="checkbox" id="filterAbuse" checked /> Abuso</label
-              >
-              <label
-                ><input type="checkbox" id="filterScam" checked /> Scam</label
-              >
-              <label
-                ><input type="checkbox" id="filterNSFW" checked /> NSFW</label
-              >
+          <section class="blacklist-ranking" aria-labelledby="blacklistRankingTitle">
+            <h3 id="blacklistRankingTitle">Blacklisted Authors by Pending Payout</h3>
+            <p class="stats-card-note">Totals reflect the selected content in your local cache. Use Sync 7 Days (HAFSQL) to refresh it.</p>
+            <div class="blacklist-ranking-filters">
+              <label>Author
+                <input id="blacklistRankingAuthor" type="search" placeholder="@username" autocomplete="off" />
+              </label>
+              <label>Period
+                <select id="blacklistRankingPeriod">
+                  <option value="24">Last 24 hours</option>
+                  <option value="72">Last 3 days</option>
+                  <option value="168" selected>Last 7 days</option>
+                  <option value="all">All cached dates</option>
+                </select>
+              </label>
+              <label>Content
+                <select id="blacklistRankingContent">
+                  <option value="posts">Original posts</option>
+                  <option value="all">Posts and comments</option>
+                  <option value="comments">Comments</option>
+                </select>
+              </label>
+              <label>Blacklist
+                <select id="blacklistRankingSource">
+                  <option value="">All active on-chain lists</option>
+                </select>
+              </label>
+              <label>Min. pending payout
+                <input id="blacklistRankingMinimum" type="number" min="0" step="0.001" placeholder="$0.000" />
+              </label>
             </div>
-            <div class="filter-group">
-              <input
-                type="text"
-                id="modAuthorFilter"
-                placeholder="Filtrar por autor..."
-              />
-              <input
-                type="number"
-                id="minPayoutFilter"
-                placeholder="Payout mínimo"
-                value="10"
-              />
+            <div class="blacklist-ranking-summary">
+              <p id="blacklistRankingSummary" role="status"></p>
+              <p>Total pending payout <strong id="blacklistRankingTotal">$0.000</strong></p>
             </div>
-          </div>
-
-          <div class="moderation-table-container">
-            <table class="moderation-table">
-              <thead>
-                <tr>
-                  <th><input type="checkbox" id="selectAll" /></th>
-                  <th>Autor</th>
-                  <th>Título</th>
-                  <th>Payout</th>
-                  <th>Risco</th>
-                  <th>Flag</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="moderationTableBody">
-                <!-- Conteúdo da moderação será carregado aqui -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="moderation-stats">
-            <div class="stat-card">
-              <div class="stat-icon high-risk">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Alto Risco</span>
-                <span class="stat-value" id="highRiskCount">0</span>
-              </div>
+            <div class="moderation-table-container" id="blacklistRankingResults">
+              <table class="moderation-table blacklist-ranking-table" aria-labelledby="blacklistRankingTitle">
+                <thead>
+                  <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Author</th>
+                    <th scope="col">Items</th>
+                    <th scope="col" aria-sort="descending">Pending payout</th>
+                  </tr>
+                </thead>
+                <tbody id="blacklistRankingBody"></tbody>
+              </table>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon medium-risk">
-                <i class="fas fa-exclamation-circle"></i>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Médio Risco</span>
-                <span class="stat-value" id="mediumRiskCount">0</span>
-              </div>
+            <div class="blacklist-ranking-pagination" id="blacklistRankingPagination" hidden>
+              <button type="button" class="btn-icon" id="blacklistRankingPrevious" aria-label="Previous ranking page"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+              <span id="blacklistRankingPage"></span>
+              <button type="button" class="btn-icon" id="blacklistRankingNext" aria-label="Next ranking page"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
-            <div class="stat-card">
-              <div class="stat-icon low-risk">
-                <i class="fas fa-info-circle"></i>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Baixo Risco</span>
-                <span class="stat-value" id="lowRiskCount">0</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon total-flagged">
-                <i class="fas fa-flag"></i>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Total Sinalizado</span>
-                <span class="stat-value" id="totalFlaggedCount">0</span>
-              </div>
-            </div>
-          </div>
+          </section>
         </section>
 
-        <!-- Seção: Sinalizados -->
+        <!-- Section: Flagged -->
         <section id="flagged-section" class="content-section">
           <div class="section-header">
-            <h2><i class="fas fa-flag"></i> Posts Sinalizados</h2>
+            <h2><i class="fas fa-flag"></i> Flagged Posts</h2>
             <div class="flag-actions">
               <button id="clearFlagsBtn" class="btn-action">
-                <i class="fas fa-check-circle"></i> Limpar Flags
+                <i class="fas fa-check-circle"></i> Clear Flags
               </button>
               <button id="exportFlagsBtn" class="btn-action">
-                <i class="fas fa-download"></i> Exportar
+                <i class="fas fa-download"></i> Export
               </button>
             </div>
           </div>
 
-          <!-- Paginação no topo -->
+          <!-- Top pagination -->
           <div id="flaggedPaginationTop" class="pagination"></div>
 
           <!-- Container dos posts sinalizados -->
           <div class="flagged-container" id="flaggedContainer">
-            <!-- Posts sinalizados serão carregados aqui -->
+            <!-- Flagged posts will load here -->
           </div>
 
           <!-- Container da paginação -->
           <div id="flaggedPagination" class="pagination">
-            <!-- Botões de página serão criados dinamicamente -->
+            <!-- Page buttons are generated dynamically -->
           </div>
         </section>
 
-        <!-- Seção: Busca Avançada -->
+        <!-- Section: Advanced Search -->
         <section id="search-section" class="content-section">
           <div class="section-header">
-            <h2><i class="fas fa-search"></i> Busca Avançada</h2>
+            <h2><i class="fas fa-search"></i> Advanced Search</h2>
           </div>
 
           <div class="advanced-search">
             <div class="search-form">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="searchAuthor">Autor</label>
+                  <label for="searchAuthor">Author</label>
                   <input
                     type="text"
                     id="searchAuthor"
@@ -533,11 +491,11 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label for="searchTitle">Título</label>
+                  <label for="searchTitle">Title</label>
                   <input
                     type="text"
                     id="searchTitle"
-                    placeholder="Palavras no título"
+                    placeholder="Words in title"
                   />
                 </div>
                 <div class="form-group">
@@ -549,7 +507,7 @@
                   />
                 </div>
                 <div class="form-group">
-                  <label for="searchApp">Aplicativo (App)</label>
+                  <label for="searchApp">App</label>
                   <input
                     type="text"
                     id="searchApp"
@@ -560,15 +518,15 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label for="searchDateFrom">Data Inicial</label>
+                  <label for="searchDateFrom">Start Date</label>
                   <input type="datetime-local" id="searchDateFrom" />
                 </div>
                 <div class="form-group">
-                  <label for="searchDateTo">Data Final</label>
+                  <label for="searchDateTo">End Date</label>
                   <input type="datetime-local" id="searchDateTo" />
                 </div>
                 <div class="form-group">
-                  <label for="searchMinPayout">Payout Mínimo</label>
+                  <label for="searchMinPayout">Minimum Payout</label>
                   <input
                     type="number"
                     id="searchMinPayout"
@@ -581,97 +539,204 @@
 
               <div class="form-row">
                 <div class="form-group full-width">
-                  <label for="searchContent">Conteúdo (regex permitido)</label>
+                  <label for="searchContent">Content (regex supported)</label>
                   <input
                     type="text"
                     id="searchContent"
-                    placeholder="expressão regular ou texto"
+                    placeholder="Regular expression or text"
                   />
                 </div>
               </div>
 
               <button id="performAdvancedSearch" class="btn-primary btn-large">
-                <i class="fas fa-search"></i> Executar Busca
+                <i class="fas fa-search"></i> Run Search
               </button>
             </div>
 
             <div class="search-results" id="advancedSearchResults">
-              <!-- Resultados da busca avançada -->
+              <!-- Advanced search results -->
             </div>
           </div>
         </section>
 
-        <!-- Seção: Estatísticas -->
+        <!-- Section: Statistics -->
         <section id="stats-section" class="content-section">
           <div class="section-header">
-            <h2><i class="fas fa-chart-pie"></i> Estatísticas da Rede</h2>
+            <h2><i class="fas fa-chart-pie"></i> Statistics</h2>
             <div class="time-filter">
+              <label for="statsTimeFilter">Period (UTC)</label>
               <select id="statsTimeFilter">
-                <option value="24">Últimas 24h</option>
-                <option value="168" selected>Última semana</option>
-                <option value="720">Últimos 30 dias</option>
+                <option value="24">Today</option>
+                <option value="168" selected>Last 7 Days</option>
+                <option value="720">Last 30 Days</option>
               </select>
             </div>
           </div>
 
+          <section class="haf-stats-panel" aria-labelledby="hafStatsHeading">
+            <div class="haf-stats-header">
+              <div>
+                <h3 id="hafStatsHeading"><i class="fas fa-globe"></i> Hive Network Insights</h3>
+                <p>Network activity for the selected period. Hive Power shows the current snapshot.</p>
+              </div>
+              <div class="haf-stats-controls">
+                <span id="hafStatsStatus" class="haf-stats-status" role="status">Waiting for Statistics</span>
+                <button type="button" id="refreshHafStatsBtn" class="btn-action">
+                  <i class="fas fa-sync-alt"></i> Refresh Network Data
+                </button>
+              </div>
+            </div>
+
+            <div class="haf-stats-kpis">
+              <article class="haf-kpi-card">
+                <span>Daily Active Users</span>
+                <strong id="hafDauValue">—</strong>
+                <small id="hafDauCaption">Latest available day</small>
+              </article>
+              <article class="haf-kpi-card">
+                <span>Posts in Period</span>
+                <strong id="hafPostsValue">—</strong>
+                <small>Network-wide</small>
+              </article>
+              <article class="haf-kpi-card">
+                <span>Comments in Period</span>
+                <strong id="hafCommentsValue">—</strong>
+                <small>Network-wide</small>
+              </article>
+              <article class="haf-kpi-card">
+                <span>Average Votes per Post</span>
+                <strong id="hafVotesPerPostValue">—</strong>
+                <small id="hafEngagementCaption">For posts created in the selected period</small>
+              </article>
+            </div>
+
+            <div class="haf-stats-grid">
+              <article class="haf-chart-card has-chart">
+                <div class="haf-chart-heading">
+                  <h4><i class="fas fa-users"></i> Daily Active Users</h4>
+                  <label class="haf-dau-filter" for="hafDauOperationType">
+                    <span>Operation type</span>
+                    <select id="hafDauOperationType" class="form-input">
+                      <option value="post">post</option>
+                      <option value="comment">comment</option>
+                      <option value="vote">vote</option>
+                      <option value="transfer">transfer</option>
+                      <option value="custom_json">custom_json</option>
+                      <option value="all" selected>all</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="haf-chart-canvas"><canvas id="hafDauChart"></canvas></div>
+                <p id="hafDauChartStatus" class="stats-card-status" role="status"></p>
+              </article>
+              <article class="haf-chart-card has-chart">
+                <h4><i class="fas fa-pen-to-square"></i> Posts and Comments</h4>
+                <div class="haf-chart-canvas"><canvas id="hafContentChart"></canvas></div>
+                <p id="hafContentChartStatus" class="stats-card-status" role="status"></p>
+              </article>
+              <article class="haf-chart-card has-chart">
+                <h4><i class="fas fa-chart-line"></i> Vote Activity</h4>
+                <div class="haf-chart-canvas"><canvas id="hafVotesChart"></canvas></div>
+                <p id="hafVotesChartStatus" class="stats-card-status" role="status"></p>
+              </article>
+              <article class="haf-chart-card has-chart">
+                <h4><i class="fas fa-comments"></i> Posts Without Engagement</h4>
+                <div class="haf-chart-canvas"><canvas id="hafEngagementChart"></canvas></div>
+                <p id="hafEngagementChartStatus" class="stats-card-status" role="status"></p>
+                <p class="stats-card-note">Recent posts have had less time to receive votes and replies.</p>
+              </article>
+              <article class="haf-chart-card haf-governance-card">
+                <h4><i class="fas fa-scale-balanced"></i> Hive Power Concentration</h4>
+                <p id="hafGovernanceStatus" class="stats-card-status" role="status"></p>
+                <dl>
+                  <div><dt>Stake inequality (Gini)</dt><dd id="hafGiniValue">—</dd></div>
+                  <div><dt>HP held by top 1%</dt><dd id="hafTop1ShareValue">—</dd></div>
+                  <div><dt>HP held by top 10%</dt><dd id="hafTop10ShareValue">—</dd></div>
+                  <div><dt>HP holders</dt><dd id="hafHpHoldersValue">—</dd></div>
+                  <div><dt>Median HP</dt><dd id="hafMedianHpValue">—</dd></div>
+                  <div><dt>Mean HP</dt><dd id="hafMeanHpValue">—</dd></div>
+                </dl>
+              </article>
+              <article class="haf-chart-card haf-leaderboard-card">
+                <h4><i class="fas fa-ranking-star"></i> Most Active Accounts</h4>
+                <p id="hafAccountsStatus" class="stats-card-status" role="status"></p>
+                <div class="haf-table-scroll">
+                  <table class="haf-accounts-table">
+                    <thead><tr><th scope="col">Rank</th><th scope="col">Account</th><th scope="col">Signed operations</th></tr></thead>
+                    <tbody id="hafTopAccountsBody"></tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+            <p class="haf-stats-attribution">
+              Source: <a href="https://api.hive.blog/haf-stats-api/" target="_blank" rel="noopener noreferrer">Hive HAF Stats API</a>
+              <span id="hafStatsUpdatedAt"></span>
+            </p>
+          </section>
+
+          <h3 class="stats-group-title">Local Cache and Moderation</h3>
           <div class="stats-grid">
             <div class="stat-chart">
-              <h3><i class="fas fa-chart-bar"></i> Posts por Hora</h3>
-              <canvas id="postsPerHourChart"></canvas>
+              <h3><i class="fas fa-chart-bar"></i> Cached Post and Comment Activity</h3>
+              <div class="stats-chart-canvas"><canvas id="postsPerHourChart"></canvas></div>
+              <p id="postsPerHourChartStatus" class="stats-card-status" role="status"></p>
             </div>
             <div class="stat-chart">
               <h3>
-                <i class="fas fa-chart-pie"></i> Qt. de posts per Category
+                <i class="fas fa-chart-pie"></i> Post Count by Category
               </h3>
-              <canvas id="categoryDistributionChart"></canvas>
+              <div class="stats-chart-canvas"><canvas id="categoryDistributionChart"></canvas></div>
+              <p id="categoryDistributionChartStatus" class="stats-card-status" role="status"></p>
             </div>
             <div class="stat-chart">
-              <h3><i class="fas fa-users"></i> Top Apps</h3>
-              <canvas id="topAppChart"></canvas>
+              <h3><i class="fas fa-users"></i> Top Apps by Authors</h3>
+              <div class="stats-chart-canvas"><canvas id="topAppChart"></canvas></div>
+              <p id="topAppChartStatus" class="stats-card-status" role="status"></p>
             </div>
             <div class="stat-chart">
-              <h3><i class="fas fa-tags"></i> Tags Mais Usadas</h3>
-              <div id="topTagsList"></div>
+              <h3><i class="fas fa-tags"></i> Most Used Tags</h3>
+              <ol id="topTagsList" class="stats-tags"></ol>
+              <p id="topTagsStatus" class="stats-card-status"></p>
             </div>
           </div>
 
           <div class="stats-summary">
             <div class="summary-card">
-              <h4><i class="fas fa-file-alt"></i> Resumo de Posts</h4>
+              <h4><i class="fas fa-file-alt"></i> Cached Post Summary</h4>
               <div class="summary-content">
-                <p>Total de Posts: <span id="totalPostsCount">0</span></p>
-                <p>Posts por Autor: <span id="avgPostsPerAuthor">0</span></p>
-                <p>Payout Médio: <span id="avgPayout">$0.00</span></p>
-                <p>Taxa de Deleção: <span id="deletionRate">0%</span></p>
+                <p>Total Posts: <span id="totalPostsCount">0</span></p>
+                <p>Posts per Author: <span id="avgPostsPerAuthor">0</span></p>
+                <p>Average Payout: <span id="avgPayout">$0.00</span></p>
+                <p>Deletion Rate: <span id="deletionRate">0%</span></p>
               </div>
             </div>
             <div class="summary-card">
               <h4>
-                <i class="fas fa-exclamation-triangle"></i> Atividade Suspeita
+                <i class="fas fa-exclamation-triangle"></i> Suspicious Activity
               </h4>
               <div class="summary-content">
                 <p>
-                  Autores com Múltiplos Posts:
+                  Authors with 4+ Posts:
                   <span id="multiPostAuthors">0</span>
                 </p>
                 <p>
-                  Posts com Payout Alto: <span id="highPayoutPosts">0</span>
+                  High-Payout Posts: <span id="highPayoutPosts">0</span>
                 </p>
                 <p>
-                  Conteúdo Similar Detectado: <span id="similarContent">0</span>
+                  Flagged for Possible Plagiarism: <span id="similarContent">0</span>
                 </p>
-                <p>Taxa de Flag: <span id="flagRate">0%</span></p>
+                <p>Flag Rate: <span id="flagRate">0%</span></p>
               </div>
             </div>
             <div class="summary-card">
-              <h4><i class="fas fa-database"></i> Status do Cache</h4>
+              <h4><i class="fas fa-database"></i> Cache Status</h4>
               <div class="summary-content">
-                <p>Posts em Cache: <span id="cacheStatsCount">0</span></p>
-                <p>Última Atualização: <span id="cacheLastUpdate">-</span></p>
-                <p>Tempo de Atualização: <span id="cacheUpdateTime">-</span></p>
+                <p>Cached Posts and Comments: <span id="cacheStatsCount">0</span></p>
+                <p>Last Updated: <span id="cacheLastUpdate">-</span></p>
+                <p>Sync Duration: <span id="cacheUpdateTime">-</span></p>
                 <p>
                   Status:
-                  <span id="cacheStatus" class="status-good">Ativo</span>
+                  <span id="cacheStatus">—</span>
                 </p>
               </div>
             </div>
@@ -681,49 +746,49 @@
     </div>
 
     <!-- Modal de Detalhes do Post -->
-    <div id="postDetailModal" class="modal">
+    <div id="postDetailModal" class="modal hidden">
       <div class="modal-content large">
         <div class="modal-header">
-          <h2 id="postDetailTitle">Detalhes do Post</h2>
+          <h2 id="postDetailTitle">Post Details</h2>
           <button class="close-modal">&times;</button>
         </div>
         <div class="modal-body" id="postDetailBody">
-          <!-- Conteúdo será preenchido via JavaScript -->
+          <!-- Content será preenchido via JavaScript -->
         </div>
       </div>
     </div>
 
-    <!-- Modal de Configurações -->
-    <div id="settingsModal" class="modal">
+    <!-- Modal de Settings -->
+    <div id="settingsModal" class="modal hidden">
       <div class="modal-content">
         <div class="modal-header">
-          <h2><i class="fas fa-cog"></i> Configurações</h2>
+          <h2><i class="fas fa-cog"></i> Settings</h2>
           <button class="close-modal">&times;</button>
         </div>
         <div class="modal-body">
           <div class="settings-section">
-            <h3>Preferências de Moderação</h3>
+            <h3>Moderation Preferences</h3>
             <div class="setting-item">
               <label>
                 <input type="checkbox" id="autoFlagSpam" checked />
-                Auto-sinalizar spam detectado
+                Automatically flag detected spam
               </label>
             </div>
             <div class="setting-item">
               <label>
                 <input type="checkbox" id="autoFlagPlagiarism" checked />
-                Auto-sinalizar plágio
+                Automatically flag plagiarism
               </label>
             </div>
             <div class="setting-item">
               <label>
                 <input type="checkbox" id="notifyHighPayout" checked />
-                Notificar pagamentos altos
+                Notify about high payouts
               </label>
             </div>
             <div class="setting-item">
               <label>
-                Limite de payout para alerta:
+                Payout alert threshold:
                 <input
                   type="number"
                   id="payoutAlertThreshold"
@@ -736,20 +801,20 @@
           </div>
 
           <div class="settings-section">
-            <h3>Configurações da Interface</h3>
+            <h3>Interface Settings</h3>
             <div class="setting-item">
               <label>
-                Tema:
+                Theme:
                 <select id="themeSelect">
-                  <option value="light">Claro</option>
-                  <option value="dark">Escuro</option>
-                  <option value="auto">Automático</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="auto">Automatic</option>
                 </select>
               </label>
             </div>
             <div class="setting-item">
               <label>
-                Posts por página:
+                Posts per page:
                 <select id="postsPerPageSetting">
                   <option value="10">10</option>
                   <option value="25" selected>25</option>
@@ -761,7 +826,7 @@
           </div>
 
           <button id="saveSettings" class="btn-primary">
-            Salvar Configurações
+            Save Settings
           </button>
         </div>
       </div>
@@ -770,18 +835,18 @@
     <div id="mutedUsersModal" class="modal hidden">
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
-          <h3><i class="fas fa-user-slash"></i> Usuários Mutados</h3>
+          <h3><i class="fas fa-eye-slash"></i> Hidden Users</h3>
           <span class="close-modal">&times;</span>
         </div>
         <div class="modal-body">
-          <p>Usuários mutados não aparecerão na lista de posts recentes.</p>
+          <p>Posts by hidden users are filtered out of Recent Posts in this dashboard.</p>
           <div id="mutedUsersList" class="muted-users-list">
-            <!-- Lista de usuários mutados será carregada aqui -->
+            <!-- Muted users will appear here -->
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-primary" onclick="closeModal('mutedUsersModal')">
-            Fechar
+          <button class="btn-primary" id="closeMutedUsersBtn">
+            Close
           </button>
         </div>
       </div>
@@ -791,131 +856,131 @@
     <div id="onchainBlacklistModal" class="modal hidden">
       <div class="modal-content" style="max-width: 680px;">
         <div class="modal-header">
-          <h2><i class="fas fa-shield-virus" style="color: #8b5cf6;"></i> Blacklist na Hive Blockchain</h2>
+          <h2><i class="fas fa-shield-virus" style="color: #8b5cf6;"></i> Hive Blockchain Blacklist</h2>
           <span class="close-modal">&times;</span>
         </div>
         <div class="modal-tabs">
           <button class="modal-tab active" id="tabBlacklistBroadcast">
-            <i class="fas fa-broadcast-tower"></i> Transmitir Blacklist
+            <i class="fas fa-broadcast-tower"></i> Broadcast Blacklist
           </button>
           <button class="modal-tab" id="tabBlacklistPersonal">
-            <i class="fas fa-user-shield"></i> Minha Blacklist (<span id="historyAccountsCount">0</span>)
+            <i class="fas fa-user-shield"></i> My Blacklist (<span id="historyAccountsCount">0</span>)
           </button>
           <button class="modal-tab" id="tabBlacklistFollowed">
-            <i class="fas fa-users-slash"></i> Blacklists Seguidas (<span id="followedListsCountBadge">0</span>)
+            <i class="fas fa-users-slash"></i> Followed Blacklists (<span id="followedListsCountBadge">0</span>)
           </button>
         </div>
         <div class="modal-body">
-          <!-- Aba 1: Transmissão -->
+          <!-- Aba 1: Broadcast -->
           <div id="blacklistBroadcastContent">
             <div id="blacklistAuthWarning"></div>
 
             <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 12px;">
               <div class="form-group" style="flex: 2;">
-                <label for="blacklistTargetUser"><strong>Conta Alvo (@username) *</strong></label>
-                <input type="text" id="blacklistTargetUser" placeholder="ex: spammer123" class="form-input" />
+                <label for="blacklistTargetUser"><strong>Target Account (@username) *</strong></label>
+                <input type="text" id="blacklistTargetUser" placeholder="e.g. spammer123" class="form-input" />
               </div>
               <div class="form-group" style="flex: 1;">
-                <label for="blacklistSeverity"><strong>Gravidade</strong></label>
+                <label for="blacklistSeverity"><strong>Severity</strong></label>
                 <select id="blacklistSeverity" class="form-input">
-                  <option value="high" selected>Alta (Crítica)</option>
-                  <option value="medium">Média</option>
-                  <option value="low">Baixa / Alerta</option>
+                  <option value="high" selected>High (Critical)</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low / Warning</option>
                 </select>
               </div>
             </div>
 
             <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 12px;">
               <div class="form-group" style="flex: 1;">
-                <label for="blacklistReason"><strong>Motivo / Razão On-Chain (blacklist_description) *</strong></label>
-                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Gravado como a razão pública da moderação na Hive blockchain.</small>
+                <label for="blacklistReason"><strong>On-chain reason (blacklist_description) *</strong></label>
+                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Stored as the public moderation reason on the Hive blockchain.</small>
                 <select id="blacklistReason" class="form-input">
-                  <option value="Spam / Flood de Posts" selected>Spam / Flood de Posts</option>
-                  <option value="Phishing / Golpe / Link Malicioso">Phishing / Golpe / Link Malicioso</option>
-                  <option value="Plágio / Violação de Direitos">Plágio / Violação de Direitos</option>
-                  <option value="Abuso de Recompensas / Farming">Abuso de Recompensas / Farming</option>
-                  <option value="Conteúdo Tóxico / Assédio">Conteúdo Tóxico / Assédio</option>
-                  <option value="Fazenda de Contas Falsas (Sybil)">Fazenda de Contas Falsas (Sybil)</option>
-                  <option value="Outro">Outro (especificar)</option>
+                  <option value="Spam / Post Flood" selected>Spam / Post Flood</option>
+                  <option value="Phishing / Scam / Malicious Link">Phishing / Scam / Malicious Link</option>
+                  <option value="Plagiarism / Copyright Violation">Plagiarism / Copyright Violation</option>
+                  <option value="Reward Abuse / Farming">Reward Abuse / Farming</option>
+                  <option value="Toxic Content / Harassment">Toxic Content / Harassment</option>
+                  <option value="Fake Account Farm (Sybil)">Fake Account Farm (Sybil)</option>
+                  <option value="Other">Other (specify)</option>
                 </select>
-                <input type="text" id="blacklistCustomReason" placeholder="Descreva a razão específica..." class="form-input hidden" style="margin-top: 6px;" />
+                <input type="text" id="blacklistCustomReason" placeholder="Describe the specific reason..." class="form-input hidden" style="margin-top: 6px;" />
               </div>
               <div class="form-group" style="flex: 1;">
-                <label for="blacklistProtocol"><strong>Protocolo Blockchain *</strong></label>
-                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Padrão Hive salva blacklist_description no follow.</small>
+                <label for="blacklistProtocol"><strong>Blockchain Protocol *</strong></label>
+                <small style="color: #6b7280; font-size: 0.78rem; display: block; margin-bottom: 4px;">Hive standard stores blacklist_description in the follow operation.</small>
                 <select id="blacklistProtocol" class="form-input">
-                  <option value="follow" selected>Padrão Hive (follow: blacklist)</option>
-                  <option value="both">Dual: Padrão Hive + Custom JSON</option>
-                  <option value="hive_moderation">Custom JSON de Moderação (hive_moderation)</option>
+                  <option value="follow" selected>Hive Standard (follow: blacklist)</option>
+                  <option value="both">Dual: Hive Standard + Custom JSON</option>
+                  <option value="hive_moderation">Moderation Custom JSON (hive_moderation)</option>
                 </select>
               </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
-              <label for="blacklistNotes"><strong>Notas e Evidências (Opcional)</strong></label>
-              <textarea id="blacklistNotes" rows="2" class="form-input" placeholder="Justificativa adicional, links de posts com provas para outros moderadores..."></textarea>
+              <label for="blacklistNotes"><strong>Notes and Evidence (Optional)</strong></label>
+              <textarea id="blacklistNotes" rows="2" class="form-input" placeholder="Additional context or links to posts as evidence for other moderators..."></textarea>
             </div>
 
             <div class="json-preview-container">
               <div class="json-preview-header">
-                <span><i class="fas fa-code"></i> Prévia da Operação Custom JSON (Hive Keychain)</span>
+                <span><i class="fas fa-code"></i> Custom JSON Operation Preview (Hive Keychain)</span>
                 <span class="preview-badge">Posting Auth</span>
               </div>
               <pre id="blacklistJsonPreview" class="json-preview-code"></pre>
             </div>
 
             <div class="modal-footer" style="padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;">
-              <button type="button" class="btn-action btn-close-blacklist">Cancelar</button>
+              <button type="button" class="btn-action btn-close-blacklist">Cancel</button>
               <button type="button" id="submitBlacklistBroadcast" class="btn-primary btn-transmit-onchain">
-                <i class="fas fa-shield-alt"></i> Transmitir para Blockchain via Keychain
+                <i class="fas fa-shield-alt"></i> Broadcast to Blockchain via Keychain
               </button>
             </div>
           </div>
 
-          <!-- Aba 2: Minha Blacklist Pessoal -->
+          <!-- Aba 2: My Personal Blacklist -->
           <div id="blacklistHistoryContent" class="hidden">
             <div class="history-sync-bar" style="display: flex; gap: 8px; align-items: center; background: #f9fafb; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 12px; flex-wrap: wrap;">
               <div style="flex: 1; min-width: 220px; display: flex; align-items: center; gap: 6px;">
-                <label for="blacklistObserverInput" style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; margin: 0;">Observador:</label>
-                <input type="text" id="blacklistObserverInput" class="form-input" placeholder="ex: sm-silva ou seu_usuario" style="padding: 4px 8px; font-size: 0.85rem;" />
+                <label for="blacklistObserverInput" style="font-size: 0.85rem; font-weight: 600; white-space: nowrap; margin: 0;">Observer:</label>
+                <input type="text" id="blacklistObserverInput" class="form-input" placeholder="e.g. sm-silva or your_username" style="padding: 4px 8px; font-size: 0.85rem;" />
               </div>
               <button id="btnSyncFromBridgeApi" class="btn-primary" style="padding: 5px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                <i class="fas fa-sync-alt"></i> Sincronizar (bridge.get_follow_list)
+                <i class="fas fa-sync-alt"></i> Sync (bridge.get_follow_list)
               </button>
             </div>
 
             <div class="history-header-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 0.85rem; color: #4b5563;">
-                Contas na sua Blacklist Pessoal (<strong id="personalAccountsCount">0</strong>):
+                Accounts in Your Personal Blacklist (<strong id="personalAccountsCount">0</strong>):
               </span>
-              <input type="text" id="blacklistHistorySearch" placeholder="Filtrar contas..." class="form-input" style="max-width: 200px; padding: 3px 8px; font-size: 0.8rem;" />
+              <input type="text" id="blacklistHistorySearch" placeholder="Filter accounts..." class="form-input" style="max-width: 200px; padding: 3px 8px; font-size: 0.8rem;" />
             </div>
 
             <div id="onchainBlacklistHistoryList" class="blacklist-history-list" style="max-height: 340px; overflow-y: auto;"></div>
           </div>
 
-          <!-- Aba 3: Blacklists Seguidas (Subscritas) -->
+          <!-- Aba 3: Followed Blacklists -->
           <div id="blacklistFollowedContent" class="hidden">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                 <div style="font-size: 0.9rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                  <i class="fas fa-layer-group" style="color: #6366f1;"></i> Listas de Moderação Seguidas
+                  <i class="fas fa-layer-group" style="color: #6366f1;"></i> Followed Moderation Lists
                 </div>
                 <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #475569; cursor: pointer; user-select: none;">
                   <input type="checkbox" id="toggleIncludeFollowed" checked style="cursor: pointer;" />
-                  <span>Filtrar contas das listas seguidas no painel</span>
+                  <span>Filter accounts from followed lists in the dashboard</span>
                 </label>
               </div>
               <p style="font-size: 0.8rem; color: #64748b; margin: 0; line-height: 1.4;">
-                Seguir uma blacklist permite herdar moderações de projetos comunitários (ex: <code>@themarkymark</code>, <code>@faireye</code>, <code>@hive.blog</code>). Operação executada on-chain via Hive Keychain.
+                Following a blacklist lets you inherit moderation decisions from community projects (e.g. <code>@themarkymark</code>, <code>@faireye</code>, <code>@hive.blog</code>). This operation is broadcast on-chain via Hive Keychain.
               </p>
             </div>
 
-            <!-- Formulário para seguir nova blacklist -->
+            <!-- Form to follow a new blacklist -->
             <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px; background: #fff; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 6px;">
-              <input type="text" id="newFollowBlacklistAccount" placeholder="Seguir blacklist de @usuario (ex: themarkymark)" class="form-input" style="font-size: 0.85rem; flex: 1; padding: 6px 10px;" />
+              <input type="text" id="newFollowBlacklistAccount" placeholder="Follow blacklist by @username (e.g. themarkymark)" class="form-input" style="font-size: 0.85rem; flex: 1; padding: 6px 10px;" />
               <button type="button" id="btnFollowNewBlacklist" class="btn-primary" style="padding: 6px 14px; font-size: 0.85rem; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
-                <i class="fas fa-user-plus"></i> Seguir Lista (Keychain)
+                <i class="fas fa-user-plus"></i> Follow List (Keychain)
               </button>
             </div>
 
@@ -927,34 +992,88 @@
       </div>
     </div>
 
+    <dialog id="accountInvestigation" class="account-investigation" aria-labelledby="accountInvestigationTitle">
+      <header class="account-investigation-header">
+        <div>
+          <button type="button" class="account-link" id="accountInvestigationBack" hidden>← Previous account</button>
+          <h2 id="accountInvestigationTitle" tabindex="-1"></h2>
+          <a id="accountInvestigationProfile" target="_blank" rel="noopener noreferrer">View Hive profile ↗</a>
+        </div>
+        <form method="dialog"><button type="submit" class="btn-action" aria-label="Close account investigation">Close</button></form>
+      </header>
+      <nav class="account-investigation-nav" aria-label="Investigation sections">
+        <button type="button" data-investigation-view="overview" aria-pressed="true">Overview</button>
+        <button type="button" data-investigation-view="votes" aria-pressed="false">Votes · 7 days</button>
+        <button type="button" data-investigation-view="transfers" aria-pressed="false">Transfers · 30 days</button>
+        <button type="button" data-investigation-view="delegations" aria-pressed="false">Delegations</button>
+      </nav>
+      <div class="account-investigation-body">
+        <section data-investigation-panel="overview" aria-label="Account overview">
+          <section class="account-investigation-card" aria-labelledby="accountIdentityTitle">
+            <h3 id="accountIdentityTitle">Account details</h3>
+            <div id="accountIdentity"></div>
+          </section>
+          <div class="account-investigation-period">
+            <label for="accountInvestigationPeriod">Overview period</label>
+            <select id="accountInvestigationPeriod">
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last 365 days</option>
+            </select>
+          </div>
+          <section class="account-investigation-card" aria-labelledby="accountActivityTitle">
+            <h3 id="accountActivityTitle">Content &amp; engagement</h3>
+            <div id="accountActivity"></div>
+          </section>
+          <section class="account-investigation-card" aria-labelledby="accountFinanceTitle">
+            <h3 id="accountFinanceTitle">Financial activity</h3>
+            <div id="accountFinance"></div>
+          </section>
+          <section class="account-investigation-card" aria-labelledby="accountCommunitiesTitle">
+            <h3 id="accountCommunitiesTitle">Posting by community</h3>
+            <div id="accountCommunities"></div>
+          </section>
+        </section>
+        <section data-investigation-panel="votes" aria-label="Vote history" hidden></section>
+        <section data-investigation-panel="transfers" aria-label="Transfer history" hidden></section>
+        <section data-investigation-panel="delegations" aria-label="Outgoing delegations" hidden></section>
+      </div>
+    </dialog>
+
     <!-- Modal: Downvote na Blockchain (Hive Keychain) -->
-    <div id="downvoteModal" class="modal hidden">
+    <div id="downvoteModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="downvoteModalTitle">
       <div class="modal-content" style="max-width: 520px;">
         <div class="modal-header">
-          <h3><i class="fas fa-arrow-down" style="color: #ef4444;"></i> Dar Downvote na Blockchain</h3>
-          <button class="close-modal">&times;</button>
+          <h3 id="downvoteModalTitle">Downvote on Hive</h3>
+          <button type="button" class="close-modal" aria-label="Close downvote dialog">&times;</button>
         </div>
         <div class="modal-body">
-          <div id="downvoteAuthWarning"></div>
+          <div id="downvoteAuthWarning" class="downvote-info-note"></div>
 
-          <div class="downvote-target-info">
+          <div class="downvote-target-info" id="downvoteSingleTarget">
             <div class="dv-target-row">
-              <span class="dv-label">Autor:</span>
+              <span class="dv-label">Author:</span>
               <strong id="downvotePostAuthor" class="dv-value">@author</strong>
             </div>
             <div class="dv-target-row">
-              <span class="dv-label">Título:</span>
-              <span id="downvotePostTitle" class="dv-value dv-truncate">Título do Post</span>
+              <span class="dv-label">Title:</span>
+              <span id="downvotePostTitle" class="dv-value dv-truncate">Post Title</span>
             </div>
             <div class="dv-target-row">
-              <span class="dv-label">Payout Pendente:</span>
+              <span class="dv-label">Pending Payout:</span>
               <strong id="downvotePostPayout" class="dv-value dv-payout">$0.00</strong>
             </div>
           </div>
 
+          <fieldset id="downvoteBulkTarget" class="downvote-bulk-target" hidden>
+            <legend id="downvoteBulkAuthor">Content to downvote</legend>
+            <p id="downvoteBulkCount" class="downvote-bulk-count" role="status"></p>
+            <div id="downvoteBulkPosts" class="downvote-bulk-posts"></div>
+          </fieldset>
+
           <div class="form-group" style="margin-top: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label for="downvoteWeightSlider"><strong>Porcentagem de Downvote (Peso)</strong></label>
+              <label for="downvoteWeightSlider"><strong>Downvote Percentage (Weight)</strong></label>
               <span id="downvoteWeightDisplay" class="badge-downvote-weight">-100%</span>
             </div>
             <input type="range" id="downvoteWeightSlider" min="1" max="100" value="100" step="1" class="weight-slider" />
@@ -968,13 +1087,13 @@
           </div>
 
           <div class="downvote-info-note">
-            <i class="fas fa-info-circle"></i> O downvote reduz o payout pendente e sinaliza conteúdo abusivo ou fraudulento para a comunidade Hive. A operação será assinada via <strong>Hive Keychain (Posting Key)</strong>.
+            <i class="fas fa-info-circle"></i> The same weight applies to each selected item. Hive Keychain signs the transaction with your posting key.
           </div>
 
           <div class="modal-footer" style="padding-top: 1rem; margin-top: 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px;">
-            <button type="button" class="btn-action btn-close-downvote">Cancelar</button>
+            <button type="button" class="btn-action btn-close-downvote">Cancel</button>
             <button type="button" id="submitDownvoteBroadcast" class="btn-danger" style="display: inline-flex; align-items: center; gap: 6px;">
-              <i class="fas fa-arrow-down"></i> Confirmar Downvote via Keychain
+              <i class="fas fa-arrow-down"></i> Confirm Downvote with Keychain
             </button>
           </div>
         </div>
@@ -982,7 +1101,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
     <script type="module" src="src/app.js"></script>

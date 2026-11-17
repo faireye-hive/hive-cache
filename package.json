@@ -4,13 +4,20 @@
   "description": "Hive Moderation Dashboard",
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
+    "dev": "concurrently -k -n API,WEB -c cyan,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node server.js",
+    "dev:web": "vite --host 0.0.0.0",
     "start": "node server.js",
-    "build": "node -e \"console.log('Build completed successfully')\"",
+    "build": "vite build",
+    "postinstall": "node --input-type=module -e \"if (process.env.RENDER === 'true') await (await import('vite')).build()\"",
     "lint": "node --check server.js && node -e \"console.log('Lint passed')\""
   },
   "dependencies": {
     "express": "^4.21.2",
     "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^8.3.8"
   }
 }

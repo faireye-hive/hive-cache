@@ -1,174 +1,65 @@
 // src/moderation/filtering.js
 
-import { allPosts, filteredPosts, currentPage, postsPerPage, setFilteredPosts, setCurrentPage, flaggedPosts, flaggedCurrentPage, flaggedPostsPerPage, setFlaggedCurrentPage, setPostsPerPage, moderationSettings } from '../config.js';
+import { allPosts, setCurrentPage, flaggedPosts, flaggedCurrentPage, flaggedPostsPerPage, setFlaggedCurrentPage, setPostsPerPage, moderationSettings } from '../config.js';
 import { updatePostsDisplay, refreshPostsDisplay, createPostCard, updateFlaggedCount } from '../ui/domHelpers.js';
-import { escapeHTML, normalizeTags, formatDate, parseHiveDate, calculateRiskLevel, extractPostApp, normalizeAppName } from '../utils/helpers.js';
+import { escapeHTML, normalizeTags, formatDate, parseHiveDate, extractPostApp, normalizeAppName } from '../utils/helpers.js';
 import { showNotification } from '../ui/notifications.js';
+import { accountLinkHtml } from '../ui/accountInvestigation.js';
+import { showPostDetail } from '../ui/modals.js';
 import { toggleFlagPost } from './flagging.js';
 
-// Mova searchPosts para cá
+let quickFilter = "all";
+
 export function searchPosts() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
-  const filterType = document.getElementById("searchFilter").value;
-
-  if (!searchTerm) {
-    setFilteredPosts([...allPosts]);
-  } else {
-    const results = allPosts.filter((post) => {
-      const rawApp = extractPostApp(post);
-      const normApp = normalizeAppName(rawApp);
-
-      switch (filterType) {
-        case "author":
-          return post.author.toLowerCase().includes(searchTerm);
-
-        case "title":
-          return (escapeHTML(post.title) || "")
-            .toLowerCase()
-            .includes(searchTerm);
-
-        case "content":
-          return (escapeHTML(post.body) || "")
-            .toLowerCase()
-            .includes(searchTerm);
-
-        case "tags":
-          return normalizeTags(post.tags).includes(searchTerm);
-
-        case "app":
-          return normApp.includes(searchTerm) || rawApp.toLowerCase().includes(searchTerm);
-
-        default:
-          return (
-            post.author.toLowerCase().includes(searchTerm) ||
-            (escapeHTML(post.title) || "").toLowerCase().includes(searchTerm) ||
-            (escapeHTML(post.body) || "").toLowerCase().includes(searchTerm) ||
-            normalizeTags(post.tags).includes(searchTerm) ||
-            normApp.includes(searchTerm) ||
-            rawApp.toLowerCase().includes(searchTerm)
-          );
-      }
-    });
-    setFilteredPosts(results);
-  }
-
   setCurrentPage(1);
   updatePostsDisplay();
 }
 
-// Mova applyFilter para cá
 export function applyFilter(filterType) {
-  const now = new Date();
-  let results;
-
-  switch (filterType) {
-    case "last-hour":
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      results = allPosts.filter(
-        (post) => parseHiveDate(post.created) > oneHourAgo
-      );
-      break;
-
-    case "last-6h":
-      const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-      results = allPosts.filter(
-        (post) => parseHiveDate(post.created) > sixHoursAgo
-      );
-      break;
-
-    case "high-payout":
-      results = allPosts.filter(
-        (post) => parseFloat(post.pending_payout_value || 0) > 100
-      );
-      break;
-
-    case "flagged":
-      results = allPosts.filter((post) => flaggedPosts[post.id]);
-      break;
-
-    case "deleted":
-      results = allPosts.filter((post) => post.deleted === true);
-      break;
-
-    default:
-      results = [...allPosts];
-  }
-
-  setFilteredPosts(results);
-  setCurrentPage(1);
-  updatePostsDisplay();
+  quickFilter = filterType;
+  searchPosts();
 }
 
-// Mova loadModerationPanel para cá
-export function loadModerationPanel() {
-  const tableBody = document.getElementById("moderationTableBody");
-  tableBody.innerHTML = "";
+export function getRecentPostMatches() {
+  const now = Date.now();
+  const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+  const searchField = document.getElementById("searchFilter").value;
+  let posts = allPosts;
 
-  let highRisk = 0,
-    mediumRisk = 0,
-    lowRisk = 0,
-    totalFlagged = 0;
-
-  const moderationPosts = allPosts.slice(0, 100);
-
-  moderationPosts.forEach((post) => {
-    const riskLevel = calculateRiskLevel(post);
-    const isFlagged = flaggedPosts[post.id];
-
-    switch (riskLevel) {
-      case "high":
-        highRisk++;
-        break;
-      case "medium":
-        mediumRisk++;
-        break;
-      case "low":
-        lowRisk++;
-        break;
+  switch (quickFilter) {
+    case "last-hour":
+    case "last-6h": {
+      const hours = quickFilter === "last-hour" ? 1 : 6;
+      const cutoff = now - hours * 3600000;
+      posts = posts.filter(post => parseHiveDate(post.created).getTime() > cutoff);
+      break;
     }
+    case "high-payout":
+      posts = posts.filter(post => parseFloat(post.pending_payout_value || 0) > 100);
+      break;
+    case "flagged":
+      posts = posts.filter(post => Object.hasOwn(flaggedPosts, post.id));
+      break;
+    case "deleted":
+      posts = posts.filter(post => post.deleted === true);
+      break;
+  }
 
-    if (isFlagged) totalFlagged++;
+  if (!searchTerm) return posts;
+  const contains = value => String(value ?? "").toLowerCase().includes(searchTerm);
 
-    // ... restante da lógica de criação de linha da tabela ...
-    const row = document.createElement("tr");
-    row.innerHTML = `
-            <td><input type="checkbox" class="post-checkbox" data-id="${post.id}"></td>
-            <td>${post.author}</td>
-            <td>${(escapeHTML(post.title) || "Sem título").substring(0, 50)}${(escapeHTML(post.title) || "").length > 50 ? "..." : ""}</td>
-            <td>$${parseFloat(post.pending_payout_value || 0).toFixed(2)}</td>
-            <td><span class="risk-badge risk-${riskLevel}">${riskLevel.toUpperCase()}</span></td>
-            <td>${isFlagged ? '<i class="fas fa-flag text-danger"></i>' : ""}</td>
-            <td>
-                <button class="btn-icon view-post-sm" data-id="${post.id}">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn-icon flag-post-sm ${isFlagged ? "flagged" : ""}" data-id="${post.id}">
-                    <i class="fas fa-flag"></i>
-                </button>
-                <button class="btn-icon delete-post-sm" data-id="${post.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-
-    row
-      .querySelector(".view-post-sm")
-      .addEventListener("click", () => showPostDetail(post));
-    row
-      .querySelector(".flag-post-sm")
-      .addEventListener("click", () => toggleFlagPost(post.id, true));
-    row
-      .querySelector(".delete-post-sm")
-      .addEventListener("click", () => deletePost(post.id));
-
-
-    tableBody.appendChild(row);
+  return posts.filter(post => {
+    switch (searchField) {
+      case "author": return contains(post.author);
+      case "title": return contains(post.title);
+      case "content": return contains(post.body);
+      case "tags": return contains(normalizeTags(post.tags));
+      case "app": return contains(extractPostApp(post));
+      default:
+        return contains(post.author) || contains(post.title) || contains(post.body) ||
+          contains(normalizeTags(post.tags)) || contains(extractPostApp(post));
+    }
   });
-
-  document.getElementById("highRiskCount").textContent = highRisk;
-  document.getElementById("mediumRiskCount").textContent = mediumRisk;
-  document.getElementById("lowRiskCount").textContent = lowRisk;
-  document.getElementById("totalFlaggedCount").textContent = totalFlagged;
 }
 
 // Mova loadFlaggedPosts para cá
@@ -183,7 +74,7 @@ export function loadFlaggedPosts() {
 
   const flaggedPostIds = Object.keys(flaggedPosts);
   if (flaggedPostIds.length === 0) {
-    container.innerHTML = '<div class="no-posts">Nenhum post sinalizado</div>';
+    container.innerHTML = '<div class="no-posts">No flagged posts</div>';
     return;
   }
 
@@ -238,14 +129,14 @@ export function loadFlaggedPosts() {
     flagDetails.className = "flag-details";
     flagDetails.innerHTML = `
       <p>
-        <strong>Autor:</strong> ${author} 
+        <strong>Author:</strong> ${accountLinkHtml(author)}
         <span class="badge"><strong>posts:</strong> ${stats.postCount} </span>
       </p>
-      <p><strong>Sinalizado por:</strong> ${flagInfo.flaggedBy}</p>
+      <p><strong>Flagged by:</strong> ${escapeHTML(String(flagInfo.flaggedBy || "unknown"))}</p>
       <p><strong>Data:</strong> ${formatDate(flagInfo.timestamp)}</p>
-      ${flagInfo.reason ? `<p><strong>Motivo:</strong> ${flagInfo.reason}</p>` : ""}
-      <button class="btn-primary clear-flag-btn" data-id="${post.id}">
-        <i class="fas fa-check"></i> Limpar Flag
+      ${flagInfo.reason ? `<p><strong>Reason:</strong> ${escapeHTML(String(flagInfo.reason))}</p>` : ""}
+      <button class="btn-primary clear-flag-btn" data-id="${escapeHTML(String(post.id ?? ""))}">
+        <i class="fas fa-check"></i> Clear Flag
       </button>
     `;
 
@@ -265,7 +156,7 @@ export function loadFlaggedPosts() {
     if (!paginationContainer || totalPages <= 1) return;
     // ... lógica de paginação ...
     const prevBtn = document.createElement("button");
-    prevBtn.textContent = "Anterior";
+    prevBtn.textContent = "Previous";
     prevBtn.disabled = flaggedCurrentPage === 1;
     prevBtn.addEventListener("click", () => {
       setFlaggedCurrentPage(flaggedCurrentPage - 1);
@@ -273,7 +164,7 @@ export function loadFlaggedPosts() {
     });
 
     const nextBtn = document.createElement("button");
-    nextBtn.textContent = "Próxima";
+    nextBtn.textContent = "Next";
     nextBtn.disabled = flaggedCurrentPage === totalPages;
     nextBtn.addEventListener("click", () => {
       setFlaggedCurrentPage(flaggedCurrentPage + 1);
@@ -281,7 +172,7 @@ export function loadFlaggedPosts() {
     });
 
     const pageInfo = document.createElement("span");
-    pageInfo.textContent = `Página ${flaggedCurrentPage} de ${totalPages}`;
+    pageInfo.textContent = `Page ${flaggedCurrentPage} of ${totalPages}`;
 
     paginationContainer.appendChild(prevBtn);
     paginationContainer.appendChild(pageInfo);
@@ -385,13 +276,13 @@ export function displaySearchResults(results) {
 
   if (results.length === 0) {
     container.innerHTML =
-      '<div class="no-results">Nenhum resultado encontrado</div>';
+      '<div class="no-results">No results found</div>';
     return;
   }
 
   const summary = document.createElement("div");
   summary.className = "search-summary";
-  summary.innerHTML = `<h4>${results.length} resultados encontrados</h4>`;
+  summary.innerHTML = `<h4>${results.length} results found</h4>`;
   container.appendChild(summary);
 
   results.slice(0, 50).forEach((post) => {
@@ -399,14 +290,14 @@ export function displaySearchResults(results) {
     const div = document.createElement("div");
     div.className = "search-result-item";
     div.innerHTML = `
-            <h5>${escapeHTML(post.title) || "Sem título"}</h5>
-            <p><strong>Autor:</strong> ${post.author}</p>
+            <h5>${escapeHTML(post.title) || "Untitled"}</h5>
+            <p><strong>Author:</strong> ${accountLinkHtml(post.author)}</p>
             <p><strong>Payout:</strong> $${parseFloat(post.pending_payout_value || 0).toFixed(2)}</p>
             <p><strong>Data:</strong> ${formatDate(post.created)}</p>
-            <p><strong>Tags:</strong> ${post.tags || "Nenhuma"}</p>
+            <p><strong>Tags:</strong> ${escapeHTML(Array.isArray(post.tags) ? post.tags.join(", ") : String(post.tags || "None"))}</p>
             <p class="excerpt">${escapeHTML(post.body) ? escapeHTML(post.body).substring(0, 200) + "..." : ""}</p>
-            <button class="btn-primary view-result-btn" data-id="${post.id}">
-                <i class="fas fa-eye"></i> Ver Detalhes
+            <button class="btn-primary view-result-btn" data-id="${escapeHTML(String(post.id ?? ""))}">
+                <i class="fas fa-eye"></i> View Details
             </button>
         `;
 

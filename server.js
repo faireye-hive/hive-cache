@@ -11,10 +11,27 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-app.use(express.json());
+// Apply security headers before API and static responses.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+    "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https://wsrv.nl https://images.hive.blog",
+    "connect-src 'self' https://api.hive.blog https://api.openhive.network https://api.deathwing.me https://hive-api.arcange.eu https://rpc.mahdiyari.info",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; '));
+  next();
+});
 
-// Serve static assets from project root
-app.use(express.static(__dirname));
+app.use(express.json({ limit: '1mb' }));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -43,8 +60,13 @@ app.get('/api/blockchain-status', (req, res) => {
 
 // API endpoint to trigger live blockchain sync from Hive (hafsql)
 app.all(['/api/sync-blockchain', '/api/sync'], async (req, res) => {
-  const hours = parseInt(req.query.hours || req.body?.hours || '24', 10);
-  const limit = req.query.limit || req.body?.limit ? parseInt(req.query.limit || req.body?.limit, 10) : null;
+  const hours = Number(req.query.hours ?? req.body?.hours ?? 168);
+  const rawLimit = req.query.limit ?? req.body?.limit;
+  const limit = rawLimit == null ? null : Number(rawLimit);
+  if (!Number.isSafeInteger(hours) || hours < 1 ||
+      (limit !== null && (!Number.isSafeInteger(limit) || limit < 1))) {
+    return res.status(400).json({ success: false, error: 'Hours and limit must be positive integers' });
+  }
 
   try {
     const result = await syncHiveBlockchainData({ hours, limit });
@@ -52,7 +74,7 @@ app.all(['/api/sync-blockchain', '/api/sync'], async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message || 'Falha ao sincronizar com a blockchain Hive via HAFSQL',
+      error: error.message || 'Failed to sync with the Hive blockchain via HAFSQL',
     });
   }
 });
@@ -67,7 +89,7 @@ app.all(['/api/sync-rpc', '/api/sync-blockchain-rpc'], async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message || 'Falha ao sincronizar com a blockchain Hive via nós RPC',
+      error: error.message || 'Failed to sync with the Hive blockchain via RPC nodes',
     });
   }
 });
@@ -105,7 +127,7 @@ app.get(['/reputations.json', '/api/reputations'], (req, res) => {
 app.post('/api/reputations', (req, res) => {
   const newReps = req.body?.reputations;
   if (!newReps || typeof newReps !== 'object') {
-    return res.status(400).json({ success: false, error: 'Objeto "reputations" não fornecido' });
+    return res.status(400).json({ success: false, error: 'The "reputations" object is required' });
   }
   const updated = saveReputationsBackup(newReps);
   res.json({ success: true, count: updated.count, lastUpdated: updated.lastUpdated });
@@ -122,10 +144,18 @@ app.post('/api/sync-reputations', async (req, res) => {
   }
 });
 
-// Fallback for HTML routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Serve only the optimized Vite build. Source files and project data stay private.
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath, { index: false }));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  app.get('*', (req, res) => {
+    res.status(503).type('text/plain').send('Frontend is not built. Run npm run dev or npm run build.');
+  });
+}
 
 app.listen(PORT, HOST, () => {
   console.log(`Hive Moderation Dashboard server running on http://${HOST}:${PORT}`);
@@ -145,7 +175,7 @@ app.listen(PORT, HOST, () => {
   setInterval(async () => {
     try {
       console.log('[AUTO-SYNC] Running periodic sync from Hive blockchain...');
-      await syncHiveBlockchainData({ hours: 24 });
+      await syncHiveBlockchainData();
       await syncMissingReputations({ limit: 100 });
     } catch (err) {
       console.error('[AUTO-SYNC] Periodic sync error:', err.message);

@@ -2,15 +2,16 @@
 
 import { moderationSettings, flaggedPosts, allPosts } from '../config.js';
 import { saveSettings } from '../core/settings.js';
-import { muteUser, unmuteUser, isUserMuted } from '../moderation/muting.js';
+import { unmuteUser } from '../moderation/muting.js';
 import { toggleFlagPost } from '../moderation/flagging.js';
 import { loadFlaggedPosts, searchPosts } from '../moderation/filtering.js';
 import { updateFlaggedCount, updatePostsDisplay, refreshPostsDisplay, selectDomainFilter } from './domHelpers.js';
-import { formatDate, escapeHTML, copyTextToClipboard } from '../utils/helpers.js';
+import { escapeHTML, copyTextToClipboard, renderPublicationTime, formatPendingPayout } from '../utils/helpers.js';
 import { extractPostUrls, extractPostDomains } from '../utils/linkExtractor.js';
 import { showNotification } from './notifications.js';
 import { openOnchainBlacklistModal } from './onchainBlacklistModal.js';
 import { renderAuthorReputationHtml, handleManualReputationRefresh } from '../api/reputationService.js';
+import { accountLinkHtml } from './accountInvestigation.js';
 import { openDownvoteModal } from './downvoteModal.js';
 import { createSafeImagePreviewHtml } from '../utils/imageProxy.js';
 import { isAccountOnchainBlacklisted } from '../api/onchainBlacklistService.js';
@@ -56,9 +57,9 @@ export function showPostDetail(post) {
   const body = document.getElementById("postDetailBody");
 
   // ... corpo da função showPostDetail ...
-  title.textContent = escapeHTML(post.title) || "Detalhes do Post";
+  title.textContent = escapeHTML(post.title) || "Post Details";
 
-  const formattedContent = (escapeHTML(post.body) || "Sem conteúdo")
+  const formattedContent = (escapeHTML(post.body) || "No content")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br>");
@@ -67,7 +68,7 @@ export function showPostDetail(post) {
   const previewImgHtml = createSafeImagePreviewHtml(post, { width: 640, height: 0, className: 'detail-preview-image' });
   const isBlacklisted = isAccountOnchainBlacklisted(post.author);
   const blacklistFlairHtml = isBlacklisted
-    ? `<span class="badge-blacklisted-flair" title="Autor na Blacklist On-Chain da Hive (bridge.get_follow_list)"><i class="fas fa-ban"></i> BLACKLISTED</span>`
+    ? `<span class="badge-blacklisted-flair" title="Author is on the Hive on-chain blacklist (bridge.get_follow_list)"><i class="fas fa-ban"></i> BLACKLISTED</span>`
     : '';
 
   const postUrls = extractPostUrls(post);
@@ -78,33 +79,33 @@ export function showPostDetail(post) {
         ${isBlacklisted ? `
           <div class="blacklist-detail-alert">
             <i class="fas fa-exclamation-triangle"></i>
-            <span><strong>Atenção:</strong> Este autor (@${escapeHTML(post.author)}) está listado na <strong>Blacklist On-Chain</strong> da Hive Blockchain.</span>
+            <span><strong>Warning:</strong> This author (@${escapeHTML(post.author)}) is on the <strong>on-chain blacklist</strong> of the Hive blockchain.</span>
           </div>
         ` : ''}
         <div class="post-detail-header">
             <div class="detail-item" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <strong>Autor:</strong> @${escapeHTML(post.author)} ${authorRepHtml} ${blacklistFlairHtml}
+                <strong>Author:</strong> ${accountLinkHtml(post.author)} ${authorRepHtml} ${blacklistFlairHtml}
             </div>
             <div class="detail-item">
-                <strong>Payout Pendente:</strong> $${parseFloat(post.pending_payout_value || 0).toFixed(2)}
+                <strong>Pending Payout:</strong> ${formatPendingPayout(post.pending_payout_value)}
             </div>
             <div class="detail-item">
-                <strong>Data:</strong> ${new Date(post.created).toLocaleString("pt-BR")}
+                <strong>Published (local time):</strong> ${renderPublicationTime(post.created)}
             </div>
             <div class="detail-item">
-                <strong>Categoria:</strong> ${escapeHTML(post.category || "N/A")}
+                <strong>Category:</strong> ${escapeHTML(post.category || "N/A")}
             </div>
         </div>
         
         <div class="post-detail-tags">
-            <strong>Tags:</strong> ${escapeHTML(post.tags || "Nenhuma")}
+            <strong>Tags:</strong> ${escapeHTML(post.tags || "None")}
         </div>
         
         <div class="post-detail-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h4 style="margin: 0;"><i class="fas fa-file-alt"></i> Conteúdo (Body):</h4>
-                <button type="button" class="btn-copy-body-detail" id="btnCopyDetailBody" title="Copiar apenas o texto do body">
-                    <i class="fas fa-copy"></i> Copiar Body
+                <h4 style="margin: 0;"><i class="fas fa-file-alt"></i> Content (Body):</h4>
+                <button type="button" class="btn-copy-body-detail" id="btnCopyDetailBody" title="Copy body text only">
+                    <i class="fas fa-copy"></i> Copy Body
                 </button>
             </div>
             <div class="content-box">${formattedContent}</div>
@@ -113,10 +114,10 @@ export function showPostDetail(post) {
         ${postDomains.length > 0 ? `
           <div class="post-detail-domains-box" style="margin-top: 1rem; padding: 0.8rem 1rem; background: var(--bg-hover, #f8fafc); border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
             <div style="font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                <i class="fas fa-link" style="color: #0284c7;"></i> Links & Domínios Detectados neste Post (${postUrls.length} links / ${postDomains.length} domínios):
+                <i class="fas fa-link" style="color: #0284c7;"></i> Links & Domains Found in This Post (${postUrls.length} links / ${postDomains.length} domains):
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                ${postDomains.map(d => `<button type="button" class="badge-domain-clickable" data-domain="${escapeHTML(d)}" title="Filtrar posts pelo domínio ${escapeHTML(d)}"><i class="fas fa-filter"></i> ${escapeHTML(d)}</button>`).join('')}
+                ${postDomains.map(d => `<button type="button" class="badge-domain-clickable" data-domain="${escapeHTML(d)}" title="Filter posts by domain ${escapeHTML(d)}"><i class="fas fa-filter"></i> ${escapeHTML(d)}</button>`).join('')}
             </div>
           </div>
         ` : ''}
@@ -138,7 +139,7 @@ export function showPostDetail(post) {
         
         <div class="post-detail-actions">
             <button class="btn-primary toggle-flag-btn" data-id="${post.id}">
-                ${flaggedPosts[post.id] ? "Remover Flag" : "Sinalizar Post"}
+                ${flaggedPosts[post.id] ? "Remove Flag" : "Flag Post"}
             </button>
             <button class="btn-action downvote-detail-btn" style="background-color: #ef4444; color: white;">
                 <i class="fas fa-arrow-down"></i> Downvote (Keychain)
@@ -147,10 +148,10 @@ export function showPostDetail(post) {
                 <i class="fas fa-shield-virus"></i> Blacklist On-Chain
             </button>
             <button class="btn-action view-author-btn" data-author="${post.author}">
-                Ver Posts do Autor
+                View Author Posts
             </button>
             <button class="btn-danger delete-post-btn" data-id="${post.id}">
-                Marcar como Deletado
+                Mark as Deleted
             </button>
         </div>
     `;
@@ -169,9 +170,9 @@ export function showPostDetail(post) {
           }, 2000);
         }
         if (success) {
-          showNotification("Conteúdo (body) copiado para a área de transferência!", "success");
+          showNotification("Post content (body) copied to clipboard!", "success");
         } else {
-          showNotification("Não foi possível copiar o conteúdo automaticamente", "error");
+          showNotification("Could not copy content automatically", "error");
         }
       });
     }
@@ -210,7 +211,7 @@ export function showPostDetail(post) {
     body.querySelector(".blacklist-onchain-detail-btn").addEventListener("click", function () {
         closeModal("postDetailModal");
         openOnchainBlacklistModal(post.author, {
-            reason: "Moderação de Post",
+            reason: "Post moderation",
             notes: `Post: "${post.title || post.id}"`
         });
     });
@@ -221,7 +222,7 @@ export function showPostDetail(post) {
     });
 
     body.querySelector(".delete-post-btn").addEventListener("click", function () {
-        if (confirm("Marcar como deletado?")) {
+        if (confirm("Mark this post as deleted?")) {
             deletePost(post.id);
             closeModal("postDetailModal");
         }
@@ -249,15 +250,15 @@ export function openMutedUsersManager() {
 
   if (moderationSettings?.mutedUsers?.length === 0) {
     container.innerHTML =
-      '<div class="no-muted-users">Nenhum usuário mutado</div>';
+      '<div class="no-muted-users">No hidden users</div>';
   } else {
     moderationSettings.mutedUsers.forEach((username) => {
       const userElement = document.createElement("div");
       userElement.className = "muted-user-item";
       userElement.innerHTML = `
-        <span class="muted-username">${username}</span>
-        <button class="btn-small btn-danger unmute-btn" data-username="${username}">
-          <i class="fas fa-volume-up"></i> Desmutar
+        <span class="muted-username">${escapeHTML(username)}</span>
+        <button class="btn-small btn-danger unmute-btn" data-username="${escapeHTML(username)}">
+          <i class="fas fa-eye"></i> Show user
         </button>
       `;
       container.appendChild(userElement);
@@ -272,6 +273,7 @@ export function openMutedUsersManager() {
     });
   }
 
+  document.getElementById("closeMutedUsersBtn")?.addEventListener("click", () => modal.classList.add("hidden"));
   modal.classList.remove("hidden");
 }
 
@@ -311,7 +313,7 @@ export function initModalListeners() {
     });
   }
 
-  document.querySelectorAll(".close-modal").forEach((closeBtn) => {
+  document.querySelectorAll(".modal:not(#downvoteModal) .close-modal").forEach((closeBtn) => {
     closeBtn.addEventListener("click", function () {
       const modal = this.closest(".modal");
       if (modal) {
@@ -320,7 +322,7 @@ export function initModalListeners() {
     });
   });
 
-  document.querySelectorAll(".modal").forEach((modal) => {
+  document.querySelectorAll(".modal:not(#downvoteModal)").forEach((modal) => {
     modal.addEventListener("click", function (e) {
       if (e.target === this) {
         this.classList.add("hidden");
@@ -339,16 +341,12 @@ export function viewAuthorPosts(author) {
 
 export function moderateAuthor(author) {
   openOnchainBlacklistModal(author, {
-    reason: "Moderação Direta",
-    notes: `Moderação iniciada para @${author}`
+    reason: "Direct moderation",
+    notes: `Moderation started for @${author}`
   });
 }
 
-export function openModerationPanel(post) {
-  showPostDetail(post);
-}
-
 export function deletePost(postId) {
-  showNotification("Funcionalidade de deleção seria implementada aqui", "info");
+  showNotification("Delete functionality would be implemented here", "info");
   // Em produção: enviar para API marcar como deletado
 }

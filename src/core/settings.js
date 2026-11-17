@@ -38,7 +38,7 @@ export function saveSettings() {
       mutedUsers: moderationSettings.mutedUsers,
     })
   );
-  showNotification("Configurações salvas com sucesso!", "success");
+  showNotification("Settings saved successfully!", "success");
   applySettings();
 }
 
