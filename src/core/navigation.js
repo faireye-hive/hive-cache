@@ -1,7 +1,8 @@
 // src/core/navigation.js
 
 import { loadRankingByPosts, loadRankingByPayout, loadStatistics } from '../utils/statsCalculators.js';
-import { loadModerationPanel, loadFlaggedPosts } from '../moderation/filtering.js';
+import { loadFlaggedPosts } from '../moderation/filtering.js';
+import { renderBlacklistRanking } from '../moderation/blacklistRanking.js';
 
 // Mova initNavigation para cá
 export function initNavigation() {
@@ -26,7 +27,7 @@ export function initNavigation() {
           loadRankingByPayout();
           break;
         case "moderation":
-          loadModerationPanel();
+          renderBlacklistRanking();
           break;
         case "flagged":
           loadFlaggedPosts();

@@ -602,9 +602,9 @@ export async function handleManualReputationRefresh(rawAuthor, btnElement) {
 
   try {
     const newScore = await fetchAuthorReputation(author, true);
-    showNotification(`Reputação de @${author} atualizada: ${newScore}`, 'success');
+    showNotification(`Reputation for @${author} updated: ${newScore}`, 'success');
   } catch (err) {
-    showNotification(`Erro ao atualizar reputação de @${author}`, 'error');
+    showNotification(`Failed to update reputation for @${author}`, 'error');
   } finally {
     if (btnElement) {
       setTimeout(() => {
@@ -624,7 +624,7 @@ export function updateAuthorReputationBadges(author, score) {
   elements.forEach((badge) => {
     badge.textContent = `(${score})`;
     badge.className = `author-reputation-badge ${getReputationClass(score)}`;
-    badge.title = `Reputação Hive: ${score} (Clique no ícone para atualizar)`;
+    badge.title = `Hive reputation: ${score} (Click the icon to refresh)`;
   });
 }
 
@@ -655,14 +655,14 @@ export function renderAuthorReputationHtml(rawAuthor, fallbackScore = null) {
 
   const displayVal = cached !== null ? `(${cached})` : `(...)`;
   const repClass = cached !== null ? getReputationClass(cached) : 'rep-loading';
-  const title = cached !== null ? `Reputação Hive: ${cached}` : 'Carregando reputação...';
+  const title = cached !== null ? `Hive reputation: ${cached}` : 'Loading reputation...';
 
   return `
     <span class="author-rep-container" data-author="${author}">
       <span class="author-reputation-badge ${repClass}" data-author-rep="${author}" title="${title}">
         ${displayVal}
       </span>
-      <button type="button" class="btn-refresh-rep" data-author-action="${author}" title="Atualizar reputação de @${author} via API">
+      <button type="button" class="btn-refresh-rep" data-author-action="${author}" title="Refresh reputation for @${author} via API">
         <i class="fas fa-sync-alt"></i>
       </button>
     </span>

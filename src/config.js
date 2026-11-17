@@ -3,7 +3,6 @@
 // Variáveis de Estado
 export let currentUser = null;
 export let allPosts = [];
-export let filteredPosts = [];
 export let currentPage = 1;
 export let postsPerPage = 25;
 export let flaggedPosts = JSON.parse(localStorage.getItem("flaggedPosts") || "{}");
@@ -29,10 +28,6 @@ export let moderationSettings = {
 // Funções para alterar o estado (necessárias para reatribuir `let` exportadas)
 export function setAllPosts(posts) {
   allPosts = posts;
-}
-
-export function setFilteredPosts(posts) {
-  filteredPosts = posts;
 }
 
 export function setPostsPerPage(perPage) {

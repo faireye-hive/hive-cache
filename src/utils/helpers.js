@@ -16,14 +16,16 @@ const SUSPICIOUS_TAGS = new Set([
   "instant-cash",
 ]);
 
-// escapeHTML para sanitize
+// Encode untrusted blockchain and API values before placing them in HTML text or attributes.
 export function escapeHTML(body) {
-  if (!body || typeof body !== "string") return "";
-  const sanitized = DOMPurify.sanitize(body, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-  });
-  return sanitized;
+  if (body === null || body === undefined) return "";
+  return String(body).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
 }
 
 /**
@@ -41,12 +43,31 @@ export function parseHiveDate(dateString) {
   return isNaN(d.getTime()) ? new Date(0) : d;
 }
 
+const publicationFormatter = new Intl.DateTimeFormat("en-GB", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+export function renderPublicationTime(dateString) {
+  const date = parseHiveDate(dateString);
+  if (!Number.isFinite(date.getTime()) || date.getTime() === 0) {
+    return '<span>Unknown date</span>';
+  }
+  const utc = date.toISOString();
+  return `<time datetime="${utc}" title="${utc} (UTC)">${escapeHTML(publicationFormatter.format(date))}</time>`;
+}
+
+export function formatPendingPayout(value, fractionDigits = 2) {
+  const payout = Number.parseFloat(value);
+  return Number.isFinite(payout) ? `$${payout.toFixed(fractionDigits)}` : "—";
+}
+
 // formatDate
 export function formatDate(dateString) {
   if (!dateString) return "N/A";
   try {
     const date = parseHiveDate(dateString);
-    if (isNaN(date.getTime()) || date.getTime() === 0) return "Data inválida";
+    if (isNaN(date.getTime()) || date.getTime() === 0) return "Invalid date";
 
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -57,25 +78,25 @@ export function formatDate(dateString) {
 
     // Evita valores negativos por pequena discrepância de relógio entre cliente e blockchain
     if (diffMs < 0 || diffSecs < 15) {
-      return "Agora mesmo";
+      return "Just now";
     } else if (diffSecs < 60) {
-      return `Há ${diffSecs} seg`;
+      return `${diffSecs}s ago`;
     } else if (diffMins < 60) {
-      return `Há ${diffMins} min${diffMins !== 1 ? "s" : ""}`;
+      return `${diffMins}m ago`;
     } else if (diffHours < 24) {
-      return `Há ${diffHours} h${diffHours !== 1 ? "s" : ""}`;
+      return `${diffHours}h ago`;
     } else if (diffDays < 7) {
-      return `Há ${diffDays} dia${diffDays !== 1 ? "s" : ""}`;
+      return `${diffDays}d ago`;
     } else {
       // Melhoria de legibilidade
-      return date.toLocaleDateString("pt-BR", {
+      return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
       });
     }
   } catch (e) {
-    return "Data inválida";
+    return "Invalid date";
   }
 }
 // Mova a função debounce para cá
@@ -103,12 +124,10 @@ export function calculateRiskLevel(post) {
   const SUSPICIOUS_APP_PREFIXES = ["inleo", "desconhecido"];
   
   // Normalização de tags: garante que sejam words
-  const tags = Array.isArray(post.tags)
-    ? post.tags.map(t => t.toLowerCase())
-    : String(post.tags || "").toLowerCase().split(/\s+/).filter(t => t); // Adiciona .filter(t => t) para remover strings vazias
+  const tags = normalizeTags(post.tags).split(/[,\s]+/).filter(Boolean);
 
 
-  const category = (post.category || "").toLowerCase();
+  const category = String(post.category ?? "").toLowerCase();
 
   // Estatísticas do autor (O(1) lookup)
   const { postCount = 0 } = authorStatsMap.get(author) || {};

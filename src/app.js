@@ -1,6 +1,6 @@
 // src/app.js
 
-import { loadChartJS, updatePostsDisplay, updateSystemStatus, selectAllPosts, refreshPostsDisplay, selectAppFilter, updateAppFilterDropdown, updateDomainFilterDropdown, selectDomainFilter, initViewModeToggle } from './ui/domHelpers.js';
+import { loadChartJS, updatePostsDisplay, updateSystemStatus, refreshPostsDisplay, selectAppFilter, updateAppFilterDropdown, updateDomainFilterDropdown, selectDomainFilter, initRecentPostsControls } from './ui/domHelpers.js';
 import { loadSettings, applySettings, saveSettings } from './core/settings.js';
 import { initLoginSystem } from './core/auth.js';
 import { initNavigation } from './core/navigation.js';
@@ -10,9 +10,10 @@ import { initDownvoteModal, openDownvoteModal } from './ui/downvoteModal.js';
 import { loadInitialData, loadPosts, showCacheStats, clearCache, syncBlockchainFromNetwork } from './api/dataLoader.js';
 import { loadReputationsBackupFile } from './api/reputationService.js';
 import { searchPosts, applyFilter, performAdvancedSearch } from './moderation/filtering.js';
-import { scanForSpam, scanForPlagiarism } from './moderation/scan.js';
-import { moderationSettings, setPostsPerPage, currentPage, setCurrentPage, postsPerPage,
-          filteredPosts, getPostTypeFilter, setPostTypeFilter, getSortCriteria, setSortCriteria, getAppFilter, setAppFilter, getDomainFilter, setDomainFilter, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from './config.js';
+import { initAccountInvestigation } from './ui/accountInvestigation.js';
+import { initBlacklistRanking } from './moderation/blacklistRanking.js';
+import { moderationSettings, setPostsPerPage, setCurrentPage,
+          getPostTypeFilter, setPostTypeFilter, getSortCriteria, setSortCriteria, getAppFilter, setAppFilter, getDomainFilter, setDomainFilter, getBlacklistFilter, setBlacklistFilter, getMaxReputationFilter, setMaxReputationFilter } from './config.js';
 import { debounce } from './utils/helpers.js';
 import { showNotification } from './ui/notifications.js';
 import { updateHeaderBlacklistBadge } from './ui/onchainBlacklistModal.js';
@@ -40,7 +41,7 @@ window.openHybridSyncModal = openHybridSyncModal;
 function initEventListeners() {
   const syncBtn = document.getElementById("syncBlockchainBtn");
   if (syncBtn) {
-    syncBtn.addEventListener("click", () => syncBlockchainFromNetwork(24));
+    syncBtn.addEventListener("click", () => syncBlockchainFromNetwork());
   }
   document.getElementById("refreshBtn").addEventListener("click", loadPosts);
   document
@@ -53,22 +54,6 @@ function initEventListeners() {
   document
     .getElementById("mutedUsersBtn")
     .addEventListener("click", openMutedUsersManager);
-
-  // Paginação
-  document.getElementById("prevPage").addEventListener("click", () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      updatePostsDisplay();
-    }
-  });
-
-  document.getElementById("nextPage").addEventListener("click", () => {
-    const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-      updatePostsDisplay();
-    }
-  });
 
   document.getElementById("postsPerPage").addEventListener("change", (e) => {
     const newPerPage = parseInt(e.target.value);
@@ -83,6 +68,7 @@ function initEventListeners() {
   document
     .getElementById("searchInput")
     .addEventListener("input", debounce(searchPosts, 300)); // debounce deve ser importado
+  document.getElementById("searchFilter").addEventListener("change", searchPosts);
 
   // Filtros rápidos
   document.querySelectorAll(".filter-btn").forEach((btn) => {
@@ -94,15 +80,6 @@ function initEventListeners() {
       applyFilter(this.getAttribute("data-filter"));
     });
   });
-
-  // Moderação
-  document.getElementById("scanSpamBtn").addEventListener("click", scanForSpam);
-  document
-    .getElementById("scanPlagiarismBtn")
-    .addEventListener("click", scanForPlagiarism);
-  document
-    .getElementById("selectAll")
-    .addEventListener("change", selectAllPosts);
 
   // Busca avançada
   document
@@ -125,7 +102,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   initOnchainBlacklistModal();
   initDownvoteModal();
   initHybridSyncModal();
-  initViewModeToggle();
+  initRecentPostsControls();
+  initBlacklistRanking();
+  initAccountInvestigation();
   await loadReputationsBackupFile();
   await loadInitialData();
   updateSystemStatus();
@@ -138,7 +117,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       refreshPostsDisplay();
     })
     .catch((err) => {
-      console.warn('Sincronização em background da blacklist on-chain pendente:', err.message);
+      console.warn('On-chain blacklist background sync is pending:', err.message);
     });
 
   setInterval(updateSystemStatus, 30000);
@@ -184,16 +163,16 @@ function initPostTypeFilter() {
             setCurrentPage(1);
             refreshPostsDisplay();
             if (newApp !== "all") {
-                showNotification(`Filtrando posts pelo aplicativo: ${newApp}`, "info");
+                showNotification(`Filtering posts by app: ${newApp}`, "info");
             } else {
-                showNotification("Exibindo posts de todos os aplicativos", "info");
+                showNotification("Showing posts from all apps", "info");
             }
         });
 
         appSelect.value = getAppFilter();
     }
 
-    // NOVO: Filtro de Links e Domínios Agrupados
+    // NOVO: Filtro de Links e Grouped Domains
     const domainSelect = document.getElementById("domainFilter");
     if (domainSelect) {
         domainSelect.value = getDomainFilter();
@@ -212,11 +191,11 @@ function initPostTypeFilter() {
             setCurrentPage(1);
             refreshPostsDisplay();
             if (val === 'hide-blacklisted') {
-                showNotification("Posts de contas na blacklist on-chain estão ocultados", "info");
+                showNotification("Posts from on-chain blacklisted accounts are hidden", "info");
             } else if (val === 'only-blacklisted') {
-                showNotification("Exibindo exclusivamente autores na blacklist on-chain", "warning");
+                showNotification("Showing only authors on the on-chain blacklist", "warning");
             } else {
-                showNotification("Exibindo todos os posts (inclusive da blacklist)", "info");
+                showNotification("Showing all posts (including blacklisted accounts)", "info");
             }
         });
     }
@@ -234,7 +213,7 @@ function initPostTypeFilter() {
                 // Adiciona a opção personalizada dinamicamente
                 const opt = document.createElement("option");
                 opt.value = String(currentMaxRep);
-                opt.textContent = `Personalizado (≤ ${currentMaxRep})`;
+                opt.textContent = `Custom (≤ ${currentMaxRep})`;
                 reputationSelect.appendChild(opt);
                 reputationSelect.value = String(currentMaxRep);
             }
@@ -246,7 +225,7 @@ function initPostTypeFilter() {
             const val = e.target.value;
             if (val === "custom") {
                 const promptVal = prompt(
-                    "Defina a reputação MÁXIMA permitida (ex: 25 para focar em contas novas ou suspeitas):\nAutores com reputação MAIOR que esse valor serão ocultados.",
+                    "Set the MAXIMUM allowed reputation (e.g. 25 to focus on new or suspicious accounts):\nAuthors with a reputation HIGHER than this value will be hidden.",
                     "25"
                 );
                 if (promptVal !== null && promptVal.trim() !== "") {
@@ -258,16 +237,16 @@ function initPostTypeFilter() {
                         if (!opt) {
                             opt = document.createElement("option");
                             opt.value = String(parsed);
-                            opt.textContent = `Personalizado (≤ ${parsed})`;
+                            opt.textContent = `Custom (≤ ${parsed})`;
                             reputationSelect.appendChild(opt);
                         }
                         reputationSelect.value = String(parsed);
                         setCurrentPage(1);
                         refreshPostsDisplay();
-                        showNotification(`Filtro ativado: ocultando autores com reputação > ${parsed} (≤ ${parsed})`, "warning");
+                        showNotification(`Filter enabled: hiding authors with reputation > ${parsed} (≤ ${parsed})`, "warning");
                         return;
                     } else {
-                        showNotification("Valor de reputação inválido", "error");
+                        showNotification("Invalid reputation value", "error");
                         reputationSelect.value = currentMaxRep !== null ? String(currentMaxRep) : "all";
                         return;
                     }
@@ -281,13 +260,13 @@ function initPostTypeFilter() {
                 setMaxReputationFilter(null);
                 setCurrentPage(1);
                 refreshPostsDisplay();
-                showNotification("Filtro de reputação desativado (todas as reputações exibidas)", "info");
+                showNotification("Reputation filter disabled (all reputations shown)", "info");
             } else {
                 const num = parseInt(val, 10);
                 setMaxReputationFilter(num);
                 setCurrentPage(1);
                 refreshPostsDisplay();
-                showNotification(`Ocultando autores com reputação > ${num} (exibindo apenas ≤ ${num})`, "warning");
+                showNotification(`Hiding authors with reputation > ${num} (showing only ≤ ${num})`, "warning");
             }
         });
     }

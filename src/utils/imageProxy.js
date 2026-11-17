@@ -1,152 +1,64 @@
-// src/utils/imageProxy.js
+// Image URL validation and wsrv.nl proxy URL construction.
 
-/**
- * Utilitário para extração segura de imagens de posts Hive e roteamento via Proxy Oficial
- * Protegendo os moderadores contra XSS, vazamento de IP e rastreadores externos.
- */
+const DEFAULT_PROXY_HOST = 'https://wsrv.nl/';
 
-const DEFAULT_PROXY_HOST = 'https://images.hive.blog';
-
-/**
- * Valida se uma URL é estritamente HTTP ou HTTPS (evita javascript:, data:, etc.)
- * @param {string} url
- * @returns {boolean}
- */
-export function isValidImageUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  const trimmed = url.trim();
-  // Apenas esquemas http e https seguros
-  if (!/^https?:\/\//i.test(trimmed)) return false;
-  // Bloqueia tentativas de injeção comuns
-  if (/[<>"'`]/.test(trimmed)) return false;
-  return true;
+/** Accept only absolute HTTP(S) image URLs without credentials or control chars. */
+export function isValidImageUrl(value) {
+  if (typeof value !== 'string' || !value.trim() || /[\u0000-\u001f\u007f<>"'`]/.test(value)) return false;
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === 'http:' || url.protocol === 'https:') && !!url.hostname && !url.username && !url.password;
+  } catch {
+    return false;
+  }
 }
 
-/**
- * Extrai a URL da imagem principal de um post Hive a partir de json_metadata ou do corpo
- * @param {Object} post
- * @returns {string|null}
- */
 export function extractPostImage(post) {
   if (!post) return null;
-
-  // 1. Tenta extrair de json_metadata
   let metadata = post.json_metadata;
   if (typeof metadata === 'string') {
-    try {
-      metadata = JSON.parse(metadata);
-    } catch (e) {
-      // Ignora erro de parse
-    }
+    try { metadata = JSON.parse(metadata); } catch { metadata = null; }
   }
-
   if (metadata && typeof metadata === 'object') {
-    // Array de imagens
-    if (Array.isArray(metadata.image) && metadata.image.length > 0) {
-      const first = metadata.image[0];
-      if (isValidImageUrl(first)) return first.trim();
-    }
-    if (Array.isArray(metadata.images) && metadata.images.length > 0) {
-      const first = metadata.images[0];
-      if (isValidImageUrl(first)) return first.trim();
-    }
-    // Imagem única ou thumbnail
-    if (typeof metadata.image === 'string' && isValidImageUrl(metadata.image)) {
-      return metadata.image.trim();
-    }
-    if (typeof metadata.thumbnail === 'string' && isValidImageUrl(metadata.thumbnail)) {
-      return metadata.thumbnail.trim();
-    }
+    const candidates = [metadata.image, metadata.images, metadata.thumbnail].flat(Infinity);
+    const found = candidates.find((item) => typeof item === 'string' && isValidImageUrl(item));
+    if (found) return found.trim();
   }
 
-  // 2. Fallback: extrai do corpo do post (Markdown ou Tag img)
-  const body = post.body || '';
-  if (typeof body === 'string' && body.length > 0) {
-    // Markdown: ![alt](url)
-    const mdMatch = body.match(/!\[.*?\]\((https?:\/\/[^\s"')]+(?:\.png|\.jpg|\.jpeg|\.gif|\.webp|\.svg)?.*?)\)/i);
-    if (mdMatch && isValidImageUrl(mdMatch[1])) {
-      return mdMatch[1].trim();
-    }
-
-    // HTML tag: <img src="url">
-    const htmlMatch = body.match(/<img\s+[^>]*src=["'](https?:\/\/[^"'>\s]+)["']/i);
-    if (htmlMatch && isValidImageUrl(htmlMatch[1])) {
-      return htmlMatch[1].trim();
-    }
-
-    // Link direto para extensão de imagem
-    const directMatch = body.match(/(https?:\/\/[^\s"'<>]+\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s"'<>]*)?)/i);
-    if (directMatch && isValidImageUrl(directMatch[1])) {
-      return directMatch[1].trim();
-    }
+  const body = typeof post.body === 'string' ? post.body : '';
+  const patterns = [
+    /!\[[^\]]*\]\((https?:\/\/[^\s"')]+)\)/i,
+    /<img\b[^>]*\bsrc=["'](https?:\/\/[^"'<>\s]+)["']/i,
+    /(https?:\/\/[^\s"'<>]+\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s"'<>]*)?)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = body.match(pattern);
+    if (match && isValidImageUrl(match[1])) return match[1].trim();
   }
-
   return null;
 }
 
-/**
- * Converte qualquer URL de imagem em uma URL segura através do Proxy Oficial da Hive
- * @param {string} rawUrl - URL bruta da imagem
- * @param {number} width - Largura desejada (ex: 320, 480, 640)
- * @param {number} height - Altura desejada (0 para manter proporção)
- * @returns {string|null}
- */
+/** Build a wsrv.nl URL while keeping the source URL in a properly encoded query parameter. */
 export function getProxiedImageUrl(rawUrl, width = 480, height = 0) {
-  if (!rawUrl || !isValidImageUrl(rawUrl)) return null;
-
-  const clean = rawUrl.trim();
-
-  // Se já for uma URL do proxy images.hive.blog com dimensões, pode reutilizar ou redimensionar
-  if (clean.startsWith('https://images.hive.blog/')) {
-    // Substitui a dimensão se necessário
-    const match = clean.match(/^https:\/\/images\.hive\.blog\/\d+x\d+\/(.*)/);
-    if (match && match[1]) {
-      return `${DEFAULT_PROXY_HOST}/${width}x${height}/${match[1]}`;
-    }
-    return clean;
+  if (!isValidImageUrl(rawUrl)) return null;
+  const w = Math.max(1, Math.min(2400, Math.round(Number(width) || 480)));
+  const h = Math.max(0, Math.min(2400, Math.round(Number(height) || 0)));
+  const proxy = new URL(DEFAULT_PROXY_HOST);
+  proxy.searchParams.set('url', rawUrl.trim());
+  proxy.searchParams.set('w', String(w));
+  if (h > 0) {
+    proxy.searchParams.set('h', String(h));
+    proxy.searchParams.set('fit', 'cover');
   }
-
-  if (clean.startsWith('https://images.ecency.com/')) {
-    return clean;
-  }
-
-  // Roteia através do proxy de imagens seguro da Hive
-  return `${DEFAULT_PROXY_HOST}/${width}x${height}/${encodeURI(clean)}`;
+  return proxy.toString();
 }
 
-/**
- * Retorna o HTML sanitizado para preview de imagem de um post
- * @param {Object} post
- * @param {Object} options { width, height, className }
- * @returns {string}
- */
 export function createSafeImagePreviewHtml(post, options = {}) {
-  const width = options.width || 480;
-  const height = options.height || 0;
-  const className = options.className || 'post-preview-image';
-
+  const className = typeof options.className === 'string' && /^[a-zA-Z0-9_-]+$/.test(options.className)
+    ? options.className : 'post-preview-image';
   const rawUrl = extractPostImage(post);
-  if (!rawUrl) {
-    return '';
-  }
+  const proxiedUrl = rawUrl && getProxiedImageUrl(rawUrl, options.width ?? 480, options.height ?? 0);
+  if (!proxiedUrl) return '';
 
-  const proxiedUrl = getProxiedImageUrl(rawUrl, width, height);
-  if (!proxiedUrl) {
-    return '';
-  }
-
-  // Atributos de segurança reforçados contra XSS e rastreamento
-  return `
-    <div class="${className}-wrapper">
-      <img
-        src="${proxiedUrl}"
-        alt="Preview do post"
-        class="${className}"
-        loading="lazy"
-        referrerpolicy="no-referrer"
-        crossorigin="anonymous"
-        onerror="this.parentElement.style.display='none'"
-      />
-    </div>
-  `;
+  return `<div class="${className}-wrapper"><img src="${proxiedUrl}" alt="Preview do post" class="${className}" loading="lazy" referrerpolicy="no-referrer" decoding="async"></div>`;
 }

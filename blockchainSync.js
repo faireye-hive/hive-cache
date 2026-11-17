@@ -1,6 +1,7 @@
 import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,27 +40,18 @@ export let syncStatus = {
   lastDurationMs: 0,
 };
 
-/**
- * Sync real blockchain posts/comments from Hive HAFSQL database to data.json
- * @param {number} hours - Number of hours to look back (default: 24)
- * @param {number} limit - Optional limit of records (default: null for all in range)
- */
-export async function syncHiveBlockchainData({ hours = 24, limit = null } = {}) {
-  if (syncStatus.isSyncing) {
-    throw new Error('A sincronização já está em andamento. Aguarde.');
-  }
+const HAFSQL_BATCH_HOURS = 24;
+const HOUR_MS = 60 * 60 * 1000;
 
-  syncStatus.isSyncing = true;
-  syncStatus.lastError = null;
-  const startTime = Date.now();
+async function* readHafsqlPosts(client, startTime, hours, limit) {
+  const first = startTime - hours * HOUR_MS;
+  let remaining = limit;
+  for (let end = startTime; end > first && remaining !== 0;) {
+    const start = Math.max(first, end - HAFSQL_BATCH_HOURS * HOUR_MS);
+    const params = [new Date(start).toISOString(), new Date(end).toISOString()];
+    if (remaining !== null) params.push(remaining);
 
-  const client = await getPool().connect();
-  try {
-    console.log(`[HAFSQL] Starting sync from Hive blockchain for last ${hours} hours...`);
-    
-    const limitClause = limit ? `LIMIT ${parseInt(limit, 10)}` : '';
-    
-    const query = `
+    const { rows } = await client.query(`
       SELECT id, title, body, author, permlink, parent_author, parent_permlink, created,
              last_edited, cashout_time, remaining_till_cashout, tags, category,
              json_metadata, root_author, root_permlink, pending_payout_value, author_rewards,
@@ -67,43 +59,55 @@ export async function syncHiveBlockchainData({ hours = 24, limit = null } = {}) 
              total_rshares, net_rshares, total_vote_weight, beneficiaries, max_accepted_payout,
              percent_hbd, allow_votes, allow_curation_rewards, deleted
       FROM hafsql.comments
-      WHERE created >= NOW() - INTERVAL '${parseInt(hours, 10)} hours'
-        AND author NOT IN ('ai-summaries', 'kgakakillerg', 'taskmaster4450le', 'ben.haase', 'conscript', 'hivebuzz', 'actifit', 'pizzabot', 'ladytoken', 'redditposh')
+      WHERE created >= $1 AND created < $2
+        AND author NOT IN ('ai-summaries', 'kgakakillerg', 'taskmaster4450le', 'ben.haase', 'conscript', 'hivebuzz', 'pizzatoken', 'pizzabot', 'redditposh')
       ORDER BY created DESC
-      ${limitClause}
-    `;
+      ${remaining !== null ? 'LIMIT $3' : ''}
+    `, params);
 
-    const result = await client.query(query);
-    const rowCount = result.rows.length;
-    console.log(`[HAFSQL] Fetched ${rowCount} rows from Hive blockchain. Generating NDJSON...`);
-
-    const dataPath = path.join(__dirname, 'data.json');
-    const tempPath = path.join(__dirname, 'data.json.tmp');
-
-    // Write file in NDJSON streaming fashion
-    const writeStream = fs.createWriteStream(tempPath, { encoding: 'utf8' });
-    for (let i = 0; i < rowCount; i++) {
-      const row = result.rows[i];
-      // Format remaining_till_cashout if it is an object from postgres interval
-      if (row.remaining_till_cashout && typeof row.remaining_till_cashout === 'object') {
-        const d = row.remaining_till_cashout.days || 0;
-        const h = row.remaining_till_cashout.hours || 0;
-        row.remaining_till_cashout = `${d} days ${h} hours`;
+    for (const row of rows) {
+      const interval = row.remaining_till_cashout;
+      if (interval && typeof interval === 'object') {
+        row.remaining_till_cashout = `${interval.days || 0} days ${interval.hours || 0} hours`;
       }
-      // Ensure pending_payout_value format has currency if missing
       if (typeof row.pending_payout_value === 'number') {
         row.pending_payout_value = `${row.pending_payout_value.toFixed(3)} HBD`;
       }
-      writeStream.write(JSON.stringify(row) + '\n');
+      yield row;
     }
 
-    await new Promise((resolve, reject) => {
-      writeStream.end(resolve);
-      writeStream.on('error', reject);
-    });
+    if (remaining !== null) remaining -= rows.length;
+    end = start;
+  }
+}
 
-    // Atomic replace
-    fs.renameSync(tempPath, dataPath);
+// Download one day at a time and replace the cache only after all batches finish.
+export async function syncHiveBlockchainData({ hours = 168, limit = null } = {}) {
+  if (syncStatus.isSyncing) {
+    throw new Error('A sincronização já está em andamento. Aguarde.');
+  }
+
+  syncStatus.isSyncing = true;
+  syncStatus.lastError = null;
+  const startTime = Date.now();
+  const dataPath = path.join(__dirname, 'data.json');
+  const tempPath = path.join(__dirname, 'data.json.tmp');
+  let client;
+  let rowCount = 0;
+
+  try {
+    client = await getPool().connect();
+    console.log(`[HAFSQL] Starting sync from Hive blockchain for last ${hours} hours...`);
+
+    async function* ndjsonRows() {
+      for await (const row of readHafsqlPosts(client, startTime, hours, limit)) {
+        rowCount++;
+        yield JSON.stringify(row) + '\n';
+      }
+    }
+
+    await pipeline(ndjsonRows(), fs.createWriteStream(tempPath));
+    await fs.promises.rename(tempPath, dataPath);
 
     const duration = Date.now() - startTime;
     syncStatus.lastSyncTime = new Date().toISOString();
@@ -121,9 +125,14 @@ export async function syncHiveBlockchainData({ hours = 24, limit = null } = {}) 
   } catch (error) {
     console.error('[HAFSQL] Error during blockchain sync:', error);
     syncStatus.lastError = error.message;
+    if (client) {
+      await fs.promises.rm(tempPath, { force: true }).catch(cleanupError => {
+        console.warn('[HAFSQL] Could not remove incomplete cache:', cleanupError.message);
+      });
+    }
     throw error;
   } finally {
-    client.release();
+    client?.release();
     syncStatus.isSyncing = false;
   }
 }

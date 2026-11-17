@@ -44,7 +44,7 @@ export function loginWithHiveKeychain(rawUsername) {
   return new Promise((resolve, reject) => {
     if (!isKeychainInstalled()) {
       return reject(
-        new Error('Extensão Hive Keychain não encontrada no navegador. Certifique-se de que ela está instalada e ativa.')
+        new Error('Hive Keychain extension not found. Make sure it is installed and enabled.')
       );
     }
 
@@ -54,11 +54,11 @@ export function loginWithHiveKeychain(rawUsername) {
       .replace(/^@/, '');
 
     if (!cleanUser || cleanUser.length < 3) {
-      return reject(new Error('Informe um nome de usuário Hive válido (mínimo 3 caracteres).'));
+      return reject(new Error('Enter a valid Hive username (at least 3 characters).'));
     }
 
     const timestamp = new Date().toISOString();
-    const challengeMessage = `Hive Moderation Dashboard Auth\nUsuário: @${cleanUser}\nData: ${timestamp}`;
+    const challengeMessage = `Hive Moderation Dashboard Auth\nUser: @${cleanUser}\nDate: ${timestamp}`;
 
     window.hive_keychain.requestSignBuffer(
       cleanUser,
@@ -66,7 +66,7 @@ export function loginWithHiveKeychain(rawUsername) {
       'Posting',
       (response) => {
         if (!response) {
-          return reject(new Error('Nenhuma resposta recebida do Hive Keychain.'));
+          return reject(new Error('No response received from Hive Keychain.'));
         }
 
         if (response.success) {
@@ -80,7 +80,7 @@ export function loginWithHiveKeychain(rawUsername) {
           };
           resolve(userSession);
         } else {
-          const errorMsg = response.message || response.error || 'Autenticação cancelada ou recusada no Keychain.';
+          const errorMsg = response.message || response.error || 'Authentication canceled or rejected in Keychain.';
           reject(new Error(errorMsg));
         }
       }
@@ -100,7 +100,7 @@ export function loginWithHiveKeychain(rawUsername) {
 export function broadcastCustomJson(username, id, keyType, jsonString, displayName) {
   return new Promise((resolve, reject) => {
     if (!isKeychainInstalled()) {
-      return reject(new Error('Hive Keychain não está disponível neste navegador.'));
+      return reject(new Error('Hive Keychain is not available in this browser.'));
     }
 
     window.hive_keychain.requestCustomJson(
@@ -111,13 +111,13 @@ export function broadcastCustomJson(username, id, keyType, jsonString, displayNa
       displayName || 'Hive Moderation Operation',
       (response) => {
         if (!response) {
-          return reject(new Error('Sem resposta do Hive Keychain.'));
+          return reject(new Error('No response received from Hive Keychain.'));
         }
 
         if (response.success) {
           resolve(response);
         } else {
-          const errorMsg = response.message || response.error || 'Operação cancelada ou rejeitada no Keychain.';
+          const errorMsg = response.message || response.error || 'Operation canceled or rejected in Keychain.';
           reject(new Error(errorMsg));
         }
       }
@@ -135,14 +135,14 @@ export function broadcastCustomJson(username, id, keyType, jsonString, displayNa
 export async function broadcastBlacklistUser({
   targetUser,
   action = 'blacklist',
-  reason = 'Spam / Abuso',
+  reason = 'Spam / Abuse',
   severity = 'high',
   notes = '',
   protocol = 'both',
 }) {
   const broadcaster = currentUser?.username;
   if (!broadcaster) {
-    throw new Error('Você precisa estar logado com sua conta Hive para transmitir na blockchain.');
+    throw new Error('You must be signed in to your Hive account to broadcast on the blockchain.');
   }
 
   const cleanTarget = String(targetUser || '')
@@ -151,11 +151,11 @@ export async function broadcastBlacklistUser({
     .replace(/^@/, '');
 
   if (!cleanTarget || cleanTarget.length < 3) {
-    throw new Error('Conta de usuário alvo inválida.');
+    throw new Error('Invalid target account.');
   }
 
   if (cleanTarget === broadcaster) {
-    throw new Error('Você não pode adicionar sua própria conta à blacklist.');
+    throw new Error('You cannot add your own account to the blacklist.');
   }
 
   const timestamp = new Date().toISOString();
@@ -177,8 +177,8 @@ export async function broadcastBlacklistUser({
     const followJson = JSON.stringify(followPayload);
     const displayName =
       action === 'blacklist'
-        ? `Blacklist Hive: Adicionar @${cleanTarget}`
-        : `Remover Blacklist Hive: @${cleanTarget}`;
+        ? `Hive Blacklist: Add @${cleanTarget}`
+        : `Hive Blacklist: Remove @${cleanTarget}`;
 
     const resFollow = await broadcastCustomJson(
       broadcaster,
@@ -188,6 +188,11 @@ export async function broadcastBlacklistUser({
       displayName
     );
     results.push({ type: 'follow', response: resFollow });
+    if (action === 'blacklist') {
+      addOnchainBlacklistedAccount(cleanTarget, { reason, severity, notes }, broadcaster);
+    } else {
+      removeOnchainBlacklistedAccount(cleanTarget, broadcaster);
+    }
   }
 
   // 2. Operação Estruturada de Moderação (hive_moderation)
@@ -196,8 +201,8 @@ export async function broadcastBlacklistUser({
       app: 'hive-moderation-dashboard/1.0',
       action: action === 'blacklist' ? 'blacklist' : 'unblacklist',
       account: cleanTarget,
-      reason: reason || 'Não especificado',
-      blacklist_description: reason || 'Não especificado',
+      reason: reason || 'Not specified',
+      blacklist_description: reason || 'Not specified',
       severity: severity || 'medium',
       notes: notes || '',
       moderator: broadcaster,
@@ -207,8 +212,8 @@ export async function broadcastBlacklistUser({
     const modJson = JSON.stringify(moderationPayload);
     const displayName =
       action === 'blacklist'
-        ? `Moderação Hive: Blacklist @${cleanTarget}`
-        : `Moderação Hive: Remover Blacklist @${cleanTarget}`;
+        ? `Hive Moderation: Blacklist @${cleanTarget}`
+        : `Hive Moderation: Remove @${cleanTarget} from the blacklist`;
 
     const resMod = await broadcastCustomJson(
       broadcaster,
@@ -235,14 +240,10 @@ export async function broadcastBlacklistUser({
       txId: txId,
     });
 
-    // Adiciona ao serviço global de Blacklist On-Chain
-    addOnchainBlacklistedAccount(cleanTarget, { reason, severity, notes });
-
     // Muta localmente também para atualização imediata dos cards
     muteUser(cleanTarget);
   } else {
     removeOnchainBlacklistRecord(cleanTarget);
-    removeOnchainBlacklistedAccount(cleanTarget);
     unmuteUser(cleanTarget);
   }
 
@@ -319,20 +320,20 @@ export function broadcastDownvote({ author, permlink, weight = -10000 }) {
   return new Promise((resolve, reject) => {
     if (!isKeychainInstalled()) {
       return reject(
-        new Error('Extensão Hive Keychain não encontrada. Instale a extensão ou abra em nova aba.')
+        new Error('Hive Keychain extension not found. Install the extension or open the app in a new tab.')
       );
     }
 
     const voter = currentUser?.username;
     if (!voter) {
       return reject(
-        new Error('Você precisa estar conectado com sua conta Hive Keychain para votar/downvotar.')
+        new Error('You must be signed in with Hive Keychain to vote or downvote.')
       );
     }
 
     const cleanAuthor = String(author || '').trim().toLowerCase().replace(/^@/, '');
     if (!cleanAuthor || !permlink) {
-      return reject(new Error('Autor ou permlink do post inválido.'));
+      return reject(new Error('Invalid post author or permlink.'));
     }
 
     // Garante que o peso seja negativo entre -10000 e -1 (-100% a -0.01%)
@@ -349,7 +350,7 @@ export function broadcastDownvote({ author, permlink, weight = -10000 }) {
       numWeight,
       (response) => {
         if (!response) {
-          return reject(new Error('Sem resposta do Hive Keychain.'));
+          return reject(new Error('No response received from Hive Keychain.'));
         }
         if (response.success) {
           resolve({
@@ -369,6 +370,40 @@ export function broadcastDownvote({ author, permlink, weight = -10000 }) {
   });
 }
 
+export const MAX_BULK_DOWNVOTES = 20;
+
+export function broadcastBulkDownvotes(posts, weight) {
+  const keychain = window.hive_keychain;
+  const voter = currentUser?.username;
+  if (!voter || currentUser.loginMethod === 'guest') {
+    throw new Error('Sign in with Hive Keychain to downvote.');
+  }
+  if (typeof keychain?.requestBroadcast !== 'function') {
+    throw new Error('Hive Keychain does not support bulk broadcasting in this browser.');
+  }
+  if (posts.length < 1 || posts.length > MAX_BULK_DOWNVOTES ||
+      !Number.isInteger(weight) || weight < -10000 || weight > -1) {
+    throw new Error('Invalid downvote selection or weight.');
+  }
+
+  const targets = new Set();
+  const operations = posts.map(({ author, permlink }) => {
+    const target = `${author}/${permlink}`;
+    if (!author || !permlink || targets.has(target)) {
+      throw new Error('Each vote must target a different valid Hive post.');
+    }
+    targets.add(target);
+    return ['vote', { voter, author, permlink, weight }];
+  });
+
+  return new Promise((resolve, reject) => {
+    keychain.requestBroadcast(voter, operations, 'Posting', response => {
+      if (response?.success) resolve(response);
+      else reject(new Error(response?.message || response?.error || 'Hive Keychain did not confirm the downvotes.'));
+    });
+  });
+}
+
 /**
  * Segue ou deixa de seguir a blacklist de outro usuário na Hive via Hive Keychain (Custom JSON follow: follow_blacklist)
  * @param {Object} params
@@ -382,7 +417,7 @@ export async function broadcastFollowBlacklist({
 }) {
   const broadcaster = currentUser?.username;
   if (!broadcaster) {
-    throw new Error('Você precisa estar logado com sua conta Hive para transmitir na blockchain.');
+    throw new Error('You must be signed in to your Hive account to broadcast on the blockchain.');
   }
 
   const cleanTarget = String(targetListAccount || '')
@@ -391,11 +426,11 @@ export async function broadcastFollowBlacklist({
     .replace(/^@/, '');
 
   if (!cleanTarget || cleanTarget.length < 3) {
-    throw new Error('Nome de usuário da lista a seguir é inválido.');
+    throw new Error('Invalid username for the list you want to follow.');
   }
 
   if (cleanTarget === broadcaster) {
-    throw new Error('Você não pode seguir sua própria blacklist.');
+    throw new Error('You cannot follow your own blacklist.');
   }
 
   const what = action === 'follow_blacklist' ? ['follow_blacklist'] : ['unfollow_blacklist'];
@@ -411,8 +446,8 @@ export async function broadcastFollowBlacklist({
   const followJson = JSON.stringify(followPayload);
   const displayName =
     action === 'follow_blacklist'
-      ? `Seguir Blacklist Hive: @${cleanTarget}`
-      : `Deixar de Seguir Blacklist Hive: @${cleanTarget}`;
+      ? `Follow Hive Blacklist: @${cleanTarget}`
+      : `Unfollow Hive Blacklist: @${cleanTarget}`;
 
   const res = await broadcastCustomJson(
     broadcaster,

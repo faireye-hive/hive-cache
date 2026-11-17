@@ -3,27 +3,26 @@
 import { flaggedPosts, allPosts, moderationSettings, currentUser } from '../config.js';
 import { updateFlaggedCount, updatePostsDisplay } from '../ui/domHelpers.js';
 import { showNotification } from '../ui/notifications.js';
-import { loadModerationPanel } from './filtering.js';
 
 // Mova toggleFlagPost para cá
 export function toggleFlagPost(postId, refresh = false) {
-  if (flaggedPosts[postId]) {
+  if (Object.hasOwn(flaggedPosts, postId)) {
     delete flaggedPosts[postId];
-    showNotification("Flag removida do post", "info");
+    showNotification("Flag removed from post", "info");
   } else {
     flaggedPosts[postId] = {
       timestamp: new Date().toISOString(),
       flaggedBy: currentUser?.username || "system",
-      reason: "Moderação manual",
+      reason: "Manual moderation",
     };
-    showNotification("Post sinalizado para revisão", "warning");
+    showNotification("Post flagged for review", "warning");
 
     const post = allPosts.find((p) => p.id == postId);
     if (post && moderationSettings?.notifyHighPayout) {
       const payout = parseFloat(post.pending_payout_value || 0);
       if (payout > moderationSettings?.payoutAlertThreshold) {
         showNotification(
-          `⚠️ Post com alto payout ($${payout.toFixed(2)}) sinalizado!`,
+          `⚠️ High-payout post ($${payout.toFixed(2)}) flagged!`,
           "warning"
         );
       }
@@ -34,14 +33,15 @@ export function toggleFlagPost(postId, refresh = false) {
   updateFlaggedCount();
 
   if (refresh) {
-    loadModerationPanel();
+    updatePostsDisplay();
+  } else if (document.querySelector('.filter-btn.active[data-filter="flagged"]')) {
     updatePostsDisplay();
   } else {
-    // Atualizar apenas o botão específico
-    const flagBtn = document.querySelector(`.flag-post[data-id="${postId}"]`);
-    if (flagBtn) {
-      flagBtn.classList.toggle("flagged");
-      flagBtn.title = flaggedPosts[postId] ? "Remover flag" : "Sinalizar";
-    }
+    const isFlagged = Object.hasOwn(flaggedPosts, postId);
+    const buttons = document.querySelectorAll(`.flag-post[data-id="${CSS.escape(String(postId))}"]`);
+    buttons.forEach(button => {
+      button.classList.toggle("flagged", isFlagged);
+      button.querySelector(".flag-action-label").textContent = isFlagged ? "Remove flag" : "Flag";
+    });
   }
 }

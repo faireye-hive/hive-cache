@@ -3,12 +3,11 @@
 import { allPosts, flaggedPosts, moderationSettings, currentUser } from '../config.js';
 import { showNotification } from '../ui/notifications.js';
 import { updateFlaggedCount, updatePostsDisplay } from '../ui/domHelpers.js';
-import { loadModerationPanel } from './filtering.js';
 import { escapeHTML } from '../utils/helpers.js';
 
 // Mova scanForSpam para cá
 export function scanForSpam() {
-  showNotification("Verificando spam...", "info");
+  showNotification("Scanning for spam...", "info");
 
   setTimeout(() => {
     // ... corpo da função scanForSpam ...
@@ -56,7 +55,7 @@ export function scanForSpam() {
     if (potentialSpam.length > 0) {
       const count = potentialSpam.length;
       showNotification(
-        `Encontrados ${count} posts suspeitos de spam`,
+        `Found ${count} posts suspected of spam`,
         "warning"
       );
 
@@ -67,47 +66,45 @@ export function scanForSpam() {
             flaggedPosts[post.id] = {
               timestamp: new Date().toISOString(),
               flaggedBy: currentUser?.username || "spam-scanner",
-              reason: "Potencial spam",
+              reason: "Potential spam",
             };
           }
         });
 
         localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
         updateFlaggedCount();
-        loadModerationPanel();
         updatePostsDisplay();
         showNotification(
-          `${count} posts sinalizados automaticamente como spam`,
+          `${count} posts automatically flagged as spam`,
           "info"
         );
       } else {
-        if (confirm(`Deseja sinalizar ${count} posts como spam?`)) {
+        if (confirm(`Flag ${count} posts as spam?`)) {
           // ... manual flag logic ...
           potentialSpam.forEach((post) => {
             if (!flaggedPosts[post.id]) {
               flaggedPosts[post.id] = {
                 timestamp: new Date().toISOString(),
                 flaggedBy: currentUser?.username || "spam-scanner",
-                reason: "Potencial spam",
+                reason: "Potential spam",
               };
             }
           });
 
           localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
           updateFlaggedCount();
-          loadModerationPanel();
           updatePostsDisplay();
         }
       }
     } else {
-      showNotification("Nenhum spam detectado", "success");
+      showNotification("No spam detected", "success");
     }
   }, 2000);
 }
 
 // Mova scanForPlagiarism e as funções de detecção (keywordDetector, etc.) para cá
 export function scanForPlagiarism() {
-  showNotification("Verificando plágio...", "info");
+  showNotification("Checking for plagiarism...", "info");
 
   setTimeout(() => {
     // ... corpo da função scanForPlagiarism ...
@@ -128,7 +125,7 @@ export function scanForPlagiarism() {
     if (potentialPlagiarism.length > 0) {
       const count = potentialPlagiarism.length;
       showNotification(
-        `Encontrados ${count} posts com conteúdo similar`,
+        `Found ${count} posts with similar content`,
         "warning"
       );
 
@@ -139,38 +136,36 @@ export function scanForPlagiarism() {
             flaggedPosts[post.id] = {
               timestamp: new Date().toISOString(),
               flaggedBy: currentUser?.username || "plagiarism-scanner",
-              reason: "Possível plágio",
+              reason: "Possible plagiarism",
             };
           }
         });
         localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
         updateFlaggedCount();
-        loadModerationPanel();
         updatePostsDisplay();
         showNotification(
-          `${count} posts sinalizados automaticamente por possível plágio`,
+          `${count} posts automatically flagged for possible plagiarism`,
           "info"
         );
       } else {
-        if (confirm(`Deseja sinalizar ${count} posts por possível plágio?`)) {
+        if (confirm(`Flag ${count} posts for possible plagiarism?`)) {
           // ... manual flag logic ...
           potentialPlagiarism.forEach((post) => {
             if (!flaggedPosts[post.id]) {
               flaggedPosts[post.id] = {
                 timestamp: new Date().toISOString(),
                 flaggedBy: currentUser?.username || "plagiarism-scanner",
-                reason: "Possível plágio",
+                reason: "Possible plagiarism",
               };
             }
           });
           localStorage.setItem("flaggedPosts", JSON.stringify(flaggedPosts));
           updateFlaggedCount();
-          loadModerationPanel();
           updatePostsDisplay();
         }
       }
     } else {
-      showNotification("Nenhum plágio detectado", "success");
+      showNotification("No plagiarism detected", "success");
     }
   }, 3000);
 }
